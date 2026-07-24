@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.flutter/
+.pub/
+.build/
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Mobile
+mobile/niceos_app/.dart_tool/
+mobile/niceos_app/build/
+mobile/niceos_app/ios/
+mobile/niceos_app/.packages
+mobile/niceos_app/pubspec.lock
+
+# Docs
+docs/api-contracts/*.md
+docs/supabase-migrations/*.sql
