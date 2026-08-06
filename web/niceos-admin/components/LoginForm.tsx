@@ -2,15 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserSupabaseClient, supabaseConfigured } from "@/lib/supabase/client";
 
 export default function LoginForm() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  if (!supabaseConfigured) {
+    return (
+      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Login is disabled — Supabase is not configured. Copy{" "}
+        <code className="rounded bg-amber-100 px-1">.env.example</code> to{" "}
+        <code className="rounded bg-amber-100 px-1">.env.local</code> and fill
+        in your credentials, then restart <code className="rounded bg-amber-100 px-1">npm run dev</code>.
+      </div>
+    );
+  }
+
+  const supabase = createBrowserSupabaseClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

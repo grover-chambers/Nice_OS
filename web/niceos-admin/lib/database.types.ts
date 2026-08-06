@@ -1,59 +1,148 @@
+// Generated-by-hand types matching supabase/migrations/ (20260806000001..13).
+// Regenerate later with: supabase gen types typescript --project-id zsprlozgdxzxeevvetmg
+
 export type Json = string | number | boolean | null | { [key: string]: Json | Json[] } | Json[];
 
 export interface Database {
   public: {
     Tables: {
-      users: {
+      profiles: {
         Row: {
           id: string;
-          email: string;
-          full_name: string | null;
-          role: "admin" | "territory_manager" | "sales_rep" | "client_viewer";
+          auth_id: string | null;
+          email: string | null;
+          full_name: string;
+          phone: string | null;
+          role: Database["public"]["Enums"]["user_role"];
+          zone: string | null;
           territory_id: string | null;
+          status: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
-          id: string;
-          email: string;
-          full_name?: string | null;
-          role: "admin" | "territory_manager" | "sales_rep" | "client_viewer";
+          id?: string;
+          auth_id?: string | null;
+          email?: string | null;
+          full_name: string;
+          phone?: string | null;
+          role?: Database["public"]["Enums"]["user_role"];
+          zone?: string | null;
           territory_id?: string | null;
+          status?: string;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
-          full_name?: string | null;
-          role?: string;
+          id?: string;
+          auth_id?: string | null;
+          email?: string | null;
+          full_name?: string;
+          phone?: string | null;
+          role?: Database["public"]["Enums"]["user_role"];
+          zone?: string | null;
           territory_id?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
         };
+        Relationships: [];
       };
       territories: {
         Row: {
           id: string;
           name: string;
-          level: "region" | "county" | "subcounty" | "ward" | "sales_territory";
+          level: Database["public"]["Enums"]["territory_level"];
           parent_id: string | null;
+          zone: string | null;
           geo_json: Json | null;
           rep_id: string | null;
           target_visits_per_week: number;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           name: string;
-          level: "region" | "county" | "subcounty" | "ward" | "sales_territory";
+          level?: Database["public"]["Enums"]["territory_level"];
           parent_id?: string | null;
+          zone?: string | null;
           geo_json?: Json | null;
           rep_id?: string | null;
           target_visits_per_week?: number;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
+          id?: string;
           name?: string;
+          level?: Database["public"]["Enums"]["territory_level"];
           parent_id?: string | null;
+          zone?: string | null;
           geo_json?: Json | null;
           rep_id?: string | null;
           target_visits_per_week?: number;
+          created_at?: string;
+          updated_at?: string;
         };
+        Relationships: [];
+      };
+      reps: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string | null;
+          email: string | null;
+          color: string;
+          zone: string;
+          wards: string[];
+          target_visits_month: number;
+          actual_visits_month: number;
+          on_route: boolean;
+          last_sync_at: string | null;
+          device: string | null;
+          status: Database["public"]["Enums"]["rep_status"];
+          manager_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          phone?: string | null;
+          email?: string | null;
+          color?: string;
+          zone?: string;
+          wards?: string[];
+          target_visits_month?: number;
+          actual_visits_month?: number;
+          on_route?: boolean;
+          last_sync_at?: string | null;
+          device?: string | null;
+          status?: Database["public"]["Enums"]["rep_status"];
+          manager_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          phone?: string | null;
+          email?: string | null;
+          color?: string;
+          zone?: string;
+          wards?: string[];
+          target_visits_month?: number;
+          actual_visits_month?: number;
+          on_route?: boolean;
+          last_sync_at?: string | null;
+          device?: string | null;
+          status?: Database["public"]["Enums"]["rep_status"];
+          manager_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       retailers: {
         Row: {
@@ -61,209 +150,529 @@ export interface Database {
           name: string;
           owner_name: string | null;
           phone: string | null;
-          location: { type: string; coordinates: number[] };
-          business_type: string | null;
+          business_type: Database["public"]["Enums"]["outlet_type"];
           business_size: string | null;
-          status: "active" | "prospect" | "inactive" | "competitor_only";
-          territory_id: string;
-          target_visit_frequency_days: number;
+          tier: Database["public"]["Enums"]["retailer_tier"];
+          status: Database["public"]["Enums"]["retailer_status"];
+          ward: string | null;
+          constituency: string | null;
+          zone: string | null;
+          address: string | null;
+          location: Json | null;
+          lat: number | null;
+          lng: number | null;
+          health_score: number;
+          churn_risk: Database["public"]["Enums"]["churn_risk"];
           last_visit_at: string | null;
+          visits30d: number;
+          orders30d: number;
+          avg_order_value: number;
+          order_trend_pct: number;
+          target_visit_frequency_days: number;
+          rep_id: string | null;
+          territory_id: string | null;
+          created_by: string | null;
+          competitor_presence: Json;
+          shelf_note: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           owner_name?: string | null;
           phone?: string | null;
-          location: { type: string; coordinates: number[] };
-          business_type?: string | null;
+          business_type?: Database["public"]["Enums"]["outlet_type"];
           business_size?: string | null;
-          status?: "active" | "prospect" | "inactive" | "competitor_only";
-          territory_id: string;
-          target_visit_frequency_days?: number;
+          tier?: Database["public"]["Enums"]["retailer_tier"];
+          status?: Database["public"]["Enums"]["retailer_status"];
+          ward?: string | null;
+          constituency?: string | null;
+          zone?: string | null;
+          address?: string | null;
+          location?: Json | null;
+          lat?: number | null;
+          lng?: number | null;
+          health_score?: number;
+          churn_risk?: Database["public"]["Enums"]["churn_risk"];
           last_visit_at?: string | null;
+          visits30d?: number;
+          orders30d?: number;
+          avg_order_value?: number;
+          order_trend_pct?: number;
+          target_visit_frequency_days?: number;
+          rep_id?: string | null;
+          territory_id?: string | null;
+          created_by?: string | null;
+          competitor_presence?: Json;
+          shelf_note?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
+          id?: string;
           name?: string;
           owner_name?: string | null;
           phone?: string | null;
-          location?: { type: string; coordinates: number[] };
-          business_type?: string | null;
+          business_type?: Database["public"]["Enums"]["outlet_type"];
           business_size?: string | null;
-          status?: string;
-          territory_id?: string;
-          target_visit_frequency_days?: number;
+          tier?: Database["public"]["Enums"]["retailer_tier"];
+          status?: Database["public"]["Enums"]["retailer_status"];
+          ward?: string | null;
+          constituency?: string | null;
+          zone?: string | null;
+          address?: string | null;
+          location?: Json | null;
+          lat?: number | null;
+          lng?: number | null;
+          health_score?: number;
+          churn_risk?: Database["public"]["Enums"]["churn_risk"];
           last_visit_at?: string | null;
-        };
-      };
-      visits: {
-        Row: {
-          id: string;
-          retailer_id: string;
-          user_id: string;
-          check_in_at: string;
-          check_out_at: string | null;
-          gps_lat: number;
-          gps_lng: number;
-          gps_accuracy: number | null;
-          outcome: "completed" | "no_stock" | "not_interested" | "closed";
-          notes: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          retailer_id: string;
-          user_id: string;
-          check_in_at: string;
-          check_out_at?: string | null;
-          gps_lat: number;
-          gps_lng: number;
-          gps_accuracy?: number | null;
-          outcome?: "completed" | "no_stock" | "not_interested" | "closed";
-          notes?: string | null;
+          visits30d?: number;
+          orders30d?: number;
+          avg_order_value?: number;
+          order_trend_pct?: number;
+          target_visit_frequency_days?: number;
+          rep_id?: string | null;
+          territory_id?: string | null;
+          created_by?: string | null;
+          competitor_presence?: Json;
+          shelf_note?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
-        Update: {
-          check_out_at?: string | null;
-          outcome?: string;
-          notes?: string | null;
-        };
-      };
-      stock_observations: {
-        Row: {
-          id: string;
-          visit_id: string;
-          sku: string;
-          sku_name: string | null;
-          stock_level: number;
-          shelf_facing: number | null;
-          expiry_date: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          visit_id: string;
-          sku: string;
-          sku_name?: string | null;
-          stock_level: number;
-          shelf_facing?: number | null;
-          expiry_date?: string | null;
-          created_at?: string;
-        };
-      };
-      competitor_observations: {
-        Row: {
-          id: string;
-          visit_id: string;
-          competitor_brand: string;
-          product_name: string | null;
-          price: number | null;
-          shelf_presence: "full_facing" | "half_facing" | "shelf_edge" | "none";
-          promotion_active: boolean;
-          notes: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          visit_id: string;
-          competitor_brand: string;
-          product_name?: string | null;
-          price?: number | null;
-          shelf_presence?: string;
-          promotion_active?: boolean;
-          notes?: string | null;
-          created_at?: string;
-        };
-      };
-      order_intents: {
-        Row: {
-          id: string;
-          visit_id: string;
-          retailer_id: string;
-          sku: string;
-          sku_name: string | null;
-          quantity: number;
-          forwarded: boolean;
-          forwarded_at: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          visit_id: string;
-          retailer_id: string;
-          sku: string;
-          sku_name?: string | null;
-          quantity: number;
-          forwarded?: boolean;
-          forwarded_at?: string | null;
-          created_at?: string;
-        };
+        Relationships: [];
       };
       routes: {
         Row: {
           id: string;
-          user_id: string;
           date: string;
-          status: "draft" | "approved" | "in_progress" | "completed";
+          rep_id: string;
+          zone: string | null;
+          status: Database["public"]["Enums"]["route_status"];
+          total_km: number;
+          total_travel_min: number;
+          start_time: string | null;
+          end_time: string | null;
+          created_by: string | null;
+          revised_by: string | null;
+          revised_reason: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
-          user_id: string;
           date: string;
-          status?: "draft" | "approved" | "in_progress" | "completed";
+          rep_id: string;
+          zone?: string | null;
+          status?: Database["public"]["Enums"]["route_status"];
+          total_km?: number;
+          total_travel_min?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          created_by?: string | null;
+          revised_by?: string | null;
+          revised_reason?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
+        Update: {
+          id?: string;
+          date?: string;
+          rep_id?: string;
+          zone?: string | null;
+          status?: Database["public"]["Enums"]["route_status"];
+          total_km?: number;
+          total_travel_min?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          created_by?: string | null;
+          revised_by?: string | null;
+          revised_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       route_stops: {
         Row: {
           id: string;
           route_id: string;
           retailer_id: string;
-          sequence: number;
-          priority: "high" | "medium" | "low";
+          position: number;
+          planned_start: string | null;
+          planned_end: string | null;
+          visit_type: Database["public"]["Enums"]["visit_type"];
+          km_from_prev: number;
+          minutes_from_prev: number;
           visited: boolean;
           visited_at: string | null;
+          priority: Database["public"]["Enums"]["route_priority"];
           created_at: string;
         };
         Insert: {
           id?: string;
           route_id: string;
           retailer_id: string;
-          sequence: number;
-          priority?: "high" | "medium" | "low";
+          position: number;
+          planned_start?: string | null;
+          planned_end?: string | null;
+          visit_type?: Database["public"]["Enums"]["visit_type"];
+          km_from_prev?: number;
+          minutes_from_prev?: number;
           visited?: boolean;
           visited_at?: string | null;
+          priority?: Database["public"]["Enums"]["route_priority"];
           created_at?: string;
         };
+        Update: {
+          id?: string;
+          route_id?: string;
+          retailer_id?: string;
+          position?: number;
+          planned_start?: string | null;
+          planned_end?: string | null;
+          visit_type?: Database["public"]["Enums"]["visit_type"];
+          km_from_prev?: number;
+          minutes_from_prev?: number;
+          visited?: boolean;
+          visited_at?: string | null;
+          priority?: Database["public"]["Enums"]["route_priority"];
+          created_at?: string;
+        };
+        Relationships: [];
       };
-      shelf_photos: {
+      visits: {
+        Row: {
+          id: string;
+          retailer_id: string;
+          rep_id: string | null;
+          user_id: string | null;
+          route_id: string | null;
+          check_in_at: string;
+          check_out_at: string | null;
+          gps_lat: number;
+          gps_lng: number;
+          gps_accuracy: number | null;
+          gps_verified: boolean;
+          radius_m: number;
+          status: Database["public"]["Enums"]["visit_status"];
+          duration_min: number | null;
+          stock_captured: boolean;
+          photo_count: number;
+          order_placed: boolean;
+          order_value: number | null;
+          outcome: Database["public"]["Enums"]["visit_status"];
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          retailer_id: string;
+          rep_id?: string | null;
+          user_id?: string | null;
+          route_id?: string | null;
+          check_in_at?: string;
+          check_out_at?: string | null;
+          gps_lat: number;
+          gps_lng: number;
+          gps_accuracy?: number | null;
+          gps_verified?: boolean;
+          radius_m?: number;
+          status?: Database["public"]["Enums"]["visit_status"];
+          duration_min?: number | null;
+          stock_captured?: boolean;
+          photo_count?: number;
+          order_placed?: boolean;
+          order_value?: number | null;
+          outcome?: Database["public"]["Enums"]["visit_status"];
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          retailer_id?: string;
+          rep_id?: string | null;
+          user_id?: string | null;
+          route_id?: string | null;
+          check_in_at?: string;
+          check_out_at?: string | null;
+          gps_lat?: number;
+          gps_lng?: number;
+          gps_accuracy?: number | null;
+          gps_verified?: boolean;
+          radius_m?: number;
+          status?: Database["public"]["Enums"]["visit_status"];
+          duration_min?: number | null;
+          stock_captured?: boolean;
+          photo_count?: number;
+          order_placed?: boolean;
+          order_value?: number | null;
+          outcome?: Database["public"]["Enums"]["visit_status"];
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      visit_items: {
         Row: {
           id: string;
           visit_id: string;
-          file_path: string;
-          caption: string | null;
+          sku: string;
+          name: string | null;
+          qty: number;
+          shelf: Database["public"]["Enums"]["shelf_level"] | null;
+          price: number | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           visit_id: string;
-          file_path: string;
-          caption?: string | null;
+          sku: string;
+          name?: string | null;
+          qty?: number;
+          shelf?: Database["public"]["Enums"]["shelf_level"] | null;
+          price?: number | null;
           created_at?: string;
         };
+        Update: {
+          id?: string;
+          visit_id?: string;
+          sku?: string;
+          name?: string | null;
+          qty?: number;
+          shelf?: Database["public"]["Enums"]["shelf_level"] | null;
+          price?: number | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      order_intents: {
+        Row: {
+          id: string;
+          retailer_id: string;
+          rep_id: string | null;
+          created_by: string | null;
+          total: number;
+          forward_status: Database["public"]["Enums"]["order_forward_status"];
+          forwarded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          retailer_id: string;
+          rep_id?: string | null;
+          created_by?: string | null;
+          total?: number;
+          forward_status?: Database["public"]["Enums"]["order_forward_status"];
+          forwarded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          retailer_id?: string;
+          rep_id?: string | null;
+          created_by?: string | null;
+          total?: number;
+          forward_status?: Database["public"]["Enums"]["order_forward_status"];
+          forwarded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      order_intent_items: {
+        Row: {
+          id: string;
+          order_intent_id: string;
+          sku: string;
+          name: string | null;
+          quantity: number;
+          price: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_intent_id: string;
+          sku: string;
+          name?: string | null;
+          quantity: number;
+          price?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_intent_id?: string;
+          sku?: string;
+          name?: string | null;
+          quantity?: number;
+          price?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      competitor_observations: {
+        Row: {
+          id: string;
+          retailer_id: string;
+          rep_id: string | null;
+          visit_id: string | null;
+          brand: string;
+          product_name: string | null;
+          price: number | null;
+          shelf_presence: string;
+          activity: Database["public"]["Enums"]["competitor_activity"];
+          promotion_active: boolean;
+          note: string | null;
+          at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          retailer_id: string;
+          rep_id?: string | null;
+          visit_id?: string | null;
+          brand: string;
+          product_name?: string | null;
+          price?: number | null;
+          shelf_presence?: string;
+          activity?: Database["public"]["Enums"]["competitor_activity"];
+          promotion_active?: boolean;
+          note?: string | null;
+          at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          retailer_id?: string;
+          rep_id?: string | null;
+          visit_id?: string | null;
+          brand?: string;
+          product_name?: string | null;
+          price?: number | null;
+          shelf_presence?: string;
+          activity?: Database["public"]["Enums"]["competitor_activity"];
+          promotion_active?: boolean;
+          note?: string | null;
+          at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      alerts: {
+        Row: {
+          id: string;
+          severity: Database["public"]["Enums"]["alert_severity"];
+          category: Database["public"]["Enums"]["alert_category"];
+          title: string;
+          message: string | null;
+          retailer_id: string | null;
+          rep_id: string | null;
+          read: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          severity?: Database["public"]["Enums"]["alert_severity"];
+          category?: Database["public"]["Enums"]["alert_category"];
+          title: string;
+          message?: string | null;
+          retailer_id?: string | null;
+          rep_id?: string | null;
+          read?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          severity?: Database["public"]["Enums"]["alert_severity"];
+          category?: Database["public"]["Enums"]["alert_category"];
+          title?: string;
+          message?: string | null;
+          retailer_id?: string | null;
+          rep_id?: string | null;
+          read?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      app_scope: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          uid: string;
+          role: Database["public"]["Enums"]["user_role"];
+          zones: string[] | null;
+          rep_id: string | null;
+        }[];
+      };
+      current_scope: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          uid: string;
+          role: Database["public"]["Enums"]["user_role"];
+          zones: string[] | null;
+          rep_id: string | null;
+        }[];
+      };
+      current_profile_id: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+      is_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      is_territory_manager: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      is_sales_rep: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      is_ceo: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      zone_in_scope: {
+        Args: { target: string };
+        Returns: boolean;
+      };
+      manages_rep: {
+        Args: { target_rep_id: string };
+        Returns: boolean;
+      };
+    };
     Enums: {
-      user_role: "admin" | "territory_manager" | "sales_rep" | "client_viewer";
-      retailer_status: "active" | "prospect" | "inactive" | "competitor_only";
-      visit_outcome: "completed" | "no_stock" | "not_interested" | "closed";
-      shelf_presence: "full_facing" | "half_facing" | "shelf_edge" | "none";
+      user_role: "admin" | "territory_manager" | "sales_rep" | "ceo";
+      retailer_status: "active" | "prospect" | "at-risk" | "churned" | "blocked";
+      outlet_type: "duka" | "kiosk" | "supermarket" | "wholesaler" | "restaurant" | "chemist";
+      retailer_tier: "A" | "B" | "C";
+      churn_risk: "low" | "medium" | "high";
+      rep_status: "active" | "on-leave" | "inactive";
+      territory_level: "region" | "county" | "subcounty" | "ward" | "sales_territory";
+      route_status: "draft" | "submitted" | "approved" | "in-progress" | "completed" | "needs-revision";
       route_priority: "high" | "medium" | "low";
-      route_status: "draft" | "approved" | "in_progress" | "completed";
+      visit_type: "retail" | "order-collection" | "stock-check" | "prospecting" | "complaint-resolution";
+      visit_status: "completed" | "no-stock" | "closed" | "cancelled" | "missed";
+      shelf_level: "full" | "low" | "out";
+      order_forward_status: "pending" | "sent" | "failed" | "acknowledged";
+      competitor_activity: "price-drop" | "promo" | "new-listing" | "stockout" | "shelf-share";
+      alert_category: "churn" | "competitive" | "stock" | "expiry" | "visit" | "route" | "system";
+      alert_severity: "critical" | "warning" | "info";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

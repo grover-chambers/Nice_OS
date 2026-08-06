@@ -1,4 +1,6 @@
-import { Sidebar } from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebar";
+import { RoleProvider } from "@/lib/role-context";
+import { ToastViewport } from "@/components/toast";
 
 export default function DashboardLayout({
   children,
@@ -6,9 +8,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
-    </div>
+    <RoleProvider>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="min-w-0 flex-1 bg-slate-50 p-6">{children}</main>
+      </div>
+      <ToastViewport />
+    </RoleProvider>
   );
 }

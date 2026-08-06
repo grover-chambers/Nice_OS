@@ -1,0 +1,708 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { ExternalLink, Maximize2, Minimize2 } from "lucide-react";
+import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
+import { WARD_ZONES, type WardProperties } from "@/lib/geo/nairobi-wards";
+import { NAIROBI_CORRIDORS } from "@/lib/geo/nairobi-corridors";
+import { retailerStatusMeta } from "@/lib/status";
+import type { Retailer } from "@/lib/data/types";
+import { cn } from "@/lib/utils";
+
+const ZONE_COLORS: Record<string, string> = {
+  Western: "#4C8C40",
+  Central: "#D98A2B",
+  Northern: "#2E6E9E",
+  Eastern: "#D4B32A",
+  "South-Eastern": "#8B4C9E",
+  Southern: "#C1447A",
+};
+
+const DENSITY_STOPS: [number, string][] = [
+  [0, "#FCF3D9"],
+  [1000, "#FCF3D9"],
+  [5000, "#F2C572"],
+  [15000, "#E08B3E"],
+  [40000, "#C0522D"],
+  [200000, "#7A1F1F"],
+];
+
+const COVERAGE_STOPS: [number, string][] = [
+  [0, "#EEF4EC"],
+  [1, "#DCEEDC"],
+  [3, "#C3E3C3"],
+  [6, "#8FCF8F"],
+  [10, "#4FAF4F"],
+  [15, "#1F7A2E"],
+];
+
+const ROAD_STYLE: Record<string, { color: string; weight: number; dash?: number[] }> = {
+  highway: { color: "#C0392B", weight: 4 },
+  arterial: { color: "#D9713C", weight: 3 },
+  bypass: { color: "#8B4C9E", weight: 3, dash: [8, 5] },
+};
+
+const CORRIDOR_FEATURES = NAIROBI_CORRIDORS.map((c) => ({
+  type: "Feature",
+  properties: { name: c.name, type: c.type },
+  geometry: { type: "LineString", coordinates: c.coords },
+}));
+
+type WardFeature = {
+  type: "Feature";
+  properties: WardProperties;
+};
+
+function fmt(n: number) {
+  return n.toLocaleString("en-US");
+}
+
+function buildWardGeo(counts?: Map<string, number>) {
+  return {
+    ...TERRITORY_WARDS,
+    features: TERRITORY_WARDS.features.map((f) => ({
+      ...f,
+      properties: { ...f.properties, active: counts?.get(f.properties.ward) ?? 0 },
+    })),
+  } as any;
+}
+
+type TerritoryMapProps = {
+  retailers?: Retailer[];
+  className?: string;
+  standalone?: boolean;
+};
+
+export default function TerritoryMap({ retailers, className, standalone }: TerritoryMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const applyPaintRef = useRef<() => void>(() => {});
+  const readyRef = useRef(false);
+
+  const [mode, setMode] = useState<"zone" | "density" | "coverage">("zone");
+  const [basemap, setBasemap] = useState<"minimal" | "streets">("minimal");
+  const [outlineOnly, setOutlineOnly] = useState(false);
+  const [showCorridors, setShowCorridors] = useState(false);
+  const [showRetailers, setShowRetailers] = useState(true);
+  const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [selectedWard, setSelectedWard] = useState<WardProperties | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  const wardCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    retailers?.forEach((r) => {
+      if (r.status === "active") m.set(r.ward, (m.get(r.ward) ?? 0) + 1);
+    });
+    return m;
+  }, [retailers]);
+
+  const wardGeo = useMemo(() => buildWardGeo(wardCounts), [wardCounts]);
+
+  const retailerFeatures = useMemo(() => {
+    if (!retailers) return null;
+    return {
+      type: "FeatureCollection" as const,
+      features: retailers.map((r) => ({
+        type: "Feature" as const,
+        properties: {
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          ward: r.ward,
+          color: retailerStatusMeta[r.status]?.dot ?? "#64748b",
+        },
+        geometry: { type: "Point" as const, coordinates: [r.lng, r.lat] },
+      })),
+    };
+  }, [retailers]);
+
+  const totalPopulation = TERRITORY_WARDS.features.reduce(
+    (s, f) => s + f.properties.population,
+    0
+  );
+  const totalArea = TERRITORY_WARDS.features.reduce(
+    (s, f) => s + f.properties.area_km2,
+    0
+  );
+
+  const applyPaint = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !map.getLayer("wards-fill")) return;
+
+    const baseOpacity = basemap === "streets" ? 0.38 : 0.72;
+    const dimOpacity = 0.08;
+    const fillOpacity = outlineOnly
+      ? 0.04
+      : activeZone
+        ? (["case", ["==", ["get", "zone"], activeZone], baseOpacity, dimOpacity] as any)
+        : mode === "coverage"
+          ? 0.78
+          : baseOpacity;
+
+    const fillColor =
+      mode === "zone"
+        ? (["match", ["get", "zone"], ...Object.entries(ZONE_COLORS).flatMap(([z, c]) => [z, c]), "#CCCCCC"] as any)
+        : mode === "density"
+          ? (["interpolate", ["linear"], ["get", "density"], ...DENSITY_STOPS.flat()] as any)
+          : (["interpolate", ["linear"], ["get", "active"], ...COVERAGE_STOPS.flat()] as any);
+
+    map.setPaintProperty("wards-fill", "fill-color", fillColor);
+    map.setPaintProperty("wards-fill", "fill-opacity", fillOpacity as any);
+    map.setPaintProperty(
+      "wards-outline",
+      "line-color",
+      basemap === "streets"
+        ? (["match", ["get", "zone"], ...Object.entries(ZONE_COLORS).flatMap(([z, c]) => [z, c]), "#FBFAF6"] as any)
+        : "#FBFAF6"
+    );
+  }, [mode, basemap, outlineOnly, activeZone]);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: {
+        version: 8,
+        sources: {
+          "basemap-minimal": {
+            type: "raster",
+            tiles: ["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png", "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxzoom: 19,
+          },
+          "basemap-streets": {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            attribution: "&copy; OpenStreetMap contributors",
+            maxzoom: 19,
+          },
+          wards: { type: "geojson", data: wardGeo },
+          corridors: { type: "geojson", data: { type: "FeatureCollection", features: CORRIDOR_FEATURES } as any },
+          retailers: { type: "geojson", data: (retailerFeatures ?? emptyFC) as any },
+        },
+        layers: [
+          {
+            id: "basemap-minimal-layer",
+            type: "raster",
+            source: "basemap-minimal",
+            layout: { visibility: "visible" },
+          },
+          {
+            id: "basemap-streets-layer",
+            type: "raster",
+            source: "basemap-streets",
+            layout: { visibility: "none" },
+          },
+          {
+            id: "corridors-line",
+            type: "line",
+            source: "corridors",
+            layout: {
+              "line-cap": "round",
+              "line-join": "round",
+              visibility: "none",
+            },
+            paint: {
+              "line-color": ["match", ["get", "type"], "highway", "#C0392B", "arterial", "#D9713C", "bypass", "#8B4C9E", "#D9713C"],
+              "line-width": ["match", ["get", "type"], "highway", 4, "arterial", 3, "bypass", 3, 3],
+              "line-opacity": 0.85,
+            },
+          },
+          {
+            id: "wards-fill",
+            type: "fill",
+            source: "wards",
+            paint: {
+              "fill-color": "#CCCCCC",
+              "fill-opacity": 0.72,
+            },
+          },
+          {
+            id: "wards-outline",
+            type: "line",
+            source: "wards",
+            paint: {
+              "line-color": "#FBFAF6",
+              "line-width": 1.1,
+              "line-opacity": 1,
+            },
+          },
+          {
+            id: "retailers-circle",
+            type: "circle",
+            source: "retailers",
+            layout: { visibility: showRetailers ? "visible" : "none" },
+            paint: {
+              "circle-radius": [
+                "case",
+                ["==", ["get", "status"], "churned"], 5,
+                ["==", ["get", "status"], "prospect"], 4,
+                6,
+              ],
+              "circle-color": ["get", "color"],
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 1.2,
+            },
+          },
+        ],
+      },
+      center: [-1.35, 36.87],
+      zoom: 10.5,
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+    popupRef.current = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 8,
+    });
+
+    map.on("mouseenter", "wards-fill", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      if (e.features && e.features.length > 0 && popupRef.current) {
+        const p = e.features[0].properties as WardProperties;
+        const active = e.features[0].properties?.active ?? 0;
+        popupRef.current
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${p.ward}</strong>` +
+              (mode === "coverage" ? `<br/>${active} active outlets` : "")
+          )
+          .addTo(map);
+      }
+    });
+    map.on("mouseleave", "wards-fill", () => {
+      map.getCanvas().style.cursor = "";
+      popupRef.current?.remove();
+    });
+
+    map.on("click", "wards-fill", (e) => {
+      if (e.features && e.features.length > 0) {
+        setSelectedWard(e.features[0].properties as WardProperties);
+      }
+    });
+
+    map.on("mouseenter", "retailers-circle", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      const f = e.features?.[0];
+      if (f && popupRef.current) {
+        popupRef.current
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${f.properties.name}</strong><br/><span style="color:#64748b;text-transform:capitalize">${f.properties.status}</span>`
+          )
+          .addTo(map);
+      }
+    });
+    map.on("mouseleave", "retailers-circle", () => {
+      map.getCanvas().style.cursor = "";
+      popupRef.current?.remove();
+    });
+    map.on("click", "retailers-circle", (e) => {
+      const id = e.features?.[0]?.properties?.id;
+      if (id) window.location.href = `/retailers/${id}`;
+    });
+
+    map.on("load", () => {
+      readyRef.current = true;
+      applyPaintRef.current();
+    });
+
+    mapRef.current = map;
+
+    const containerEl = mapContainerRef.current;
+    const ro = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+    if (containerEl) ro.observe(containerEl);
+    requestAnimationFrame(() => map.resize());
+
+    return () => {
+      ro.disconnect();
+      popupRef.current?.remove();
+      map.remove();
+      mapRef.current = null;
+      readyRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    applyPaintRef.current = applyPaint;
+  }, [applyPaint]);
+
+  useEffect(() => {
+    applyPaint();
+  }, [applyPaint]);
+
+  // Keep ward active counts in sync for coverage mode
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !map.getSource("wards")) return;
+    (map.getSource("wards") as maplibregl.GeoJSONSource).setData(wardGeo);
+  }, [wardGeo]);
+
+  // Retailer markers data + visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !map.getSource("retailers")) return;
+    (map.getSource("retailers") as maplibregl.GeoJSONSource).setData((retailerFeatures ?? emptyFC) as any);
+    map.setLayoutProperty("retailers-circle", "visibility", showRetailers && retailerFeatures ? "visible" : "none");
+  }, [retailerFeatures, showRetailers]);
+
+  // Resize when expanded toggles so the canvas refills the overlay
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const t = setTimeout(() => mapRef.current?.resize(), 60);
+    return () => clearTimeout(t);
+  }, [expanded]);
+
+  const toggleBasemap = (b: "minimal" | "streets") => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setLayoutProperty("basemap-minimal-layer", "visibility", b === "minimal" ? "visible" : "none");
+    map.setLayoutProperty("basemap-streets-layer", "visibility", b === "streets" ? "visible" : "none");
+    if (b === "streets") setShowCorridors(false);
+    setBasemap(b);
+  };
+
+  const toggleCorridors = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !showCorridors;
+    map.setLayoutProperty("corridors-line", "visibility", next ? "visible" : "none");
+    setShowCorridors(next);
+  };
+
+  const toggleZone = (zone: string) => {
+    setActiveZone((prev) => (prev === zone ? null : zone));
+  };
+
+  const wardOutlets = useMemo(
+    () => (selectedWard ? (retailers ?? []).filter((r) => r.ward === selectedWard.ward) : []),
+    [selectedWard, retailers]
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex h-[75vh] min-h-[560px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:flex-row",
+        expanded && "fixed inset-0 z-50 h-screen w-screen rounded-none",
+        className
+      )}
+    >
+      <aside className="flex w-full flex-col gap-4 overflow-y-auto border-b border-slate-200 bg-slate-50 p-4 md:w-80 md:border-b-0 md:border-r">
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Ward colouring
+          </h3>
+          <div className="flex overflow-hidden rounded-md border border-emerald-700">
+            <button
+              onClick={() => setMode("zone")}
+              className={`flex-1 px-2 py-1.5 text-xs font-semibold ${mode === "zone" ? "bg-emerald-700 text-white" : "bg-white text-slate-800 hover:bg-emerald-50"}`}
+            >
+              Zones
+            </button>
+            <button
+              onClick={() => setMode("density")}
+              className={`flex-1 px-2 py-1.5 text-xs font-semibold ${mode === "density" ? "bg-emerald-700 text-white" : "bg-white text-slate-800 hover:bg-emerald-50"}`}
+            >
+              Density
+            </button>
+            {retailers && (
+              <button
+                onClick={() => setMode("coverage")}
+                className={`flex-1 px-2 py-1.5 text-xs font-semibold ${mode === "coverage" ? "bg-emerald-700 text-white" : "bg-white text-slate-800 hover:bg-emerald-50"}`}
+              >
+                Outlets
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Basemap
+          </h3>
+          <div className="flex overflow-hidden rounded-md border border-emerald-700">
+            <button
+              onClick={() => toggleBasemap("minimal")}
+              className={`flex-1 px-2 py-1.5 text-xs font-semibold ${basemap === "minimal" ? "bg-emerald-700 text-white" : "bg-white text-slate-800 hover:bg-emerald-50"}`}
+            >
+              Minimal
+            </button>
+            <button
+              onClick={() => toggleBasemap("streets")}
+              className={`flex-1 px-2 py-1.5 text-xs font-semibold ${basemap === "streets" ? "bg-emerald-700 text-white" : "bg-white text-slate-800 hover:bg-emerald-50"}`}
+            >
+              Streets
+            </button>
+          </div>
+          <label className="mt-3 flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={outlineOnly}
+              onChange={(e) => setOutlineOnly(e.target.checked)}
+              className="accent-emerald-700"
+            />
+            Outline only (hide ward fill)
+          </label>
+        </div>
+
+        {mode === "zone" ? (
+          <div>
+            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Zones (tap to isolate)
+            </h3>
+            <div className="space-y-1">
+              {WARD_ZONES.map((z) => (
+                <button
+                  key={z}
+                  onClick={() => toggleZone(z)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs text-slate-700 hover:bg-white"
+                >
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-sm border border-black/15"
+                    style={{ background: ZONE_COLORS[z] }}
+                  />
+                  <span>{z}</span>
+                  {activeZone === z && <span className="ml-auto text-emerald-700">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : mode === "density" ? (
+          <div>
+            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Estimated density (people / km²)
+            </h3>
+            <div
+              className="h-2.5 rounded"
+              style={{
+                background:
+                  "linear-gradient(90deg,#FCF3D9,#F2C572,#E08B3E,#C0522D,#7A1F1F)",
+              }}
+            />
+            <div className="mt-1 flex justify-between text-[10px] text-slate-500">
+              <span>&lt;1,000</span>
+              <span>5,000</span>
+              <span>20,000</span>
+              <span>50,000+</span>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Active outlets per ward
+            </h3>
+            <div
+              className="h-2.5 rounded"
+              style={{
+                background:
+                  "linear-gradient(90deg,#EEF4EC,#C3E3C3,#8FCF8F,#4FAF4F,#1F7A2E)",
+              }}
+            />
+            <div className="mt-1 flex justify-between text-[10px] text-slate-500">
+              <span>0</span>
+              <span>3</span>
+              <span>6</span>
+              <span>10</span>
+              <span>15+</span>
+            </div>
+          </div>
+        )}
+
+        {retailers && (
+          <div>
+            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Outlet markers
+            </h3>
+            <label className="flex items-center gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={showRetailers}
+                onChange={(e) => setShowRetailers(e.target.checked)}
+                className="accent-emerald-700"
+              />
+              Show outlets on map
+            </label>
+            {showRetailers && (
+              <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+                {(Object.keys(retailerStatusMeta) as (keyof typeof retailerStatusMeta)[]).map((s) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ background: retailerStatusMeta[s].dot }} />
+                    <span className="capitalize">{retailerStatusMeta[s].label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Corridor highlight
+          </h3>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={showCorridors}
+              onChange={toggleCorridors}
+              className="accent-emerald-700"
+            />
+            <span className="inline-block h-0.5 w-4 bg-red-700" />
+            Highlight named corridors
+          </label>
+          <div className="mt-2 space-y-1 text-[11px] text-slate-500">
+            {Object.entries(ROAD_STYLE).map(([type, s]) => (
+              <div key={type} className="flex items-center gap-2">
+                <span
+                  className="inline-block h-0.5 w-4"
+                  style={{
+                    background: s.dash ? "transparent" : s.color,
+                    borderTop: s.dash ? `2px dashed ${s.color}` : "none",
+                  }}
+                />
+                <span className="capitalize">{type}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Selected ward
+          </h3>
+          {selectedWard ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="text-sm font-bold text-slate-900">
+                {selectedWard.ward}
+              </div>
+              <div className="mb-2 text-xs text-slate-500">
+                {selectedWard.constituency} · {selectedWard.zone} Zone
+              </div>
+              <div className="divide-y divide-dashed divide-slate-200 text-xs">
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Area</span>
+                  <b className="text-slate-900">{selectedWard.area_km2} km²</b>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Est. population</span>
+                  <b className="text-slate-900">{fmt(selectedWard.population)}</b>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Density</span>
+                  <b className="text-slate-900">{fmt(selectedWard.density)} /km²</b>
+                </div>
+                {retailers && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Outlets</span>
+                    <b className="text-slate-900">{wardCounts.get(selectedWard.ward) ?? 0} active</b>
+                  </div>
+                )}
+              </div>
+              <span
+                className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  selectedWard.source === "census"
+                    ? "bg-lime-100 text-lime-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {selectedWard.source === "census" ? "2019 census figure" : "estimated"}
+              </span>
+              {retailers && wardOutlets.length > 0 && (
+                <div className="mt-3 border-t border-slate-100 pt-2">
+                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Outlets in ward ({wardOutlets.length})
+                  </p>
+                  <div className="max-h-36 space-y-1 overflow-y-auto">
+                    {wardOutlets.map((r) => (
+                      <Link
+                        key={r.id}
+                        href={`/retailers/${r.id}`}
+                        className="flex items-center gap-1.5 rounded bg-slate-50 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-100"
+                      >
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: retailerStatusMeta[r.status]?.dot }}
+                        />
+                        <span className="truncate">{r.name}</span>
+                        <span className="ml-auto shrink-0 text-slate-400">{r.id}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs italic text-slate-500">
+              Click any ward on the map for details.
+            </p>
+          )}
+        </div>
+      </aside>
+
+      <div className="relative flex-1">
+        <div
+          ref={mapContainerRef}
+          className="h-full w-full"
+          aria-label="Nairobi ward map"
+        />
+        <div className="pointer-events-none absolute left-3 top-3 z-10 flex gap-4 rounded-md bg-white/90 px-3 py-2 text-xs shadow">
+          <div>
+            <div className="text-sm font-bold text-emerald-800">
+              {TERRITORY_WARDS.features.length}
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Wards mapped
+            </div>
+          </div>
+          <div className="border-l border-slate-200 pl-4">
+            <div className="text-sm font-bold text-emerald-800">
+              {(totalPopulation / 1e6).toFixed(2)}M
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Est. population
+            </div>
+          </div>
+          <div className="border-l border-slate-200 pl-4">
+            <div className="text-sm font-bold text-emerald-800">
+              {totalArea.toFixed(0)}
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              km² total
+            </div>
+          </div>
+        </div>
+        {!standalone && (
+          <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5">
+            <button
+              title="Open map in a new tab"
+              onClick={() => window.open("/map", "_blank", "noopener")}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white/95 text-slate-600 shadow-sm hover:bg-slate-50"
+            >
+              <ExternalLink size={14} />
+            </button>
+            <button
+              title={expanded ? "Collapse map" : "Expand map to full screen"}
+              onClick={() => setExpanded((e) => !e)}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white/95 text-slate-600 shadow-sm hover:bg-slate-50"
+            >
+              {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const emptyFC = { type: "FeatureCollection", features: [] };
