@@ -1,0 +1,35 @@
+project_id = "niceos"
+
+[project]
+org_id = "grover-chambers"
+name = "niceos"
+region = "ap-southeast-1"
+
+# Use the demo seed embedded in migrations/20260806000013_seed_demo.sql
+# so `supabase db reset` reproduces the same demo dataset.
+
+[db]
+major_version = 15
+
+[db.pooler]
+enabled = true
+
+[api]
+enabled = true
+schemas = ["public"]
+
+[api.tables]
+# Default exposed tables
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+
+[edge_functions]
+forward-order-intent = { verify_jwt = true }
