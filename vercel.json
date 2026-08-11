@@ -1,0 +1,6 @@
+{
+  "rootDirectory": "web/niceos-admin",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
+}
