@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { getZoneCoverage, getRetailerCount, getRetailers } from "@/lib/data";
 import { PageHeader, DemoBanner, Progress } from "@/components/ui";
 import TerritoryTabs, { type TerritoryTab } from "@/components/territories/TerritoryTabs";
@@ -16,7 +17,7 @@ const TerritoryMap = dynamic(() => import("@/components/TerritoryMap"), {
 export default function TerritoriesPage({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: { tab?: string; zone?: string };
 }) {
   const tab: TerritoryTab =
     searchParams.tab === "map" || searchParams.tab === "hierarchy"
@@ -40,16 +41,20 @@ export default function TerritoriesPage({
       {tab === "overview" && (
         <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-3">
           {coverage.map((z) => (
-            <div key={z.zone} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <Link
+              key={z.zone}
+              href={`/territories?tab=map&zone=${encodeURIComponent(z.zone)}`}
+              className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+            >
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-800">{z.zone} Zone</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-emerald-800">{z.zone} Zone</span>
                 <span className="text-xs text-slate-400">{z.retailers} outlets</span>
               </div>
               <Progress value={z.coveragePct} tone={z.coveragePct >= 60 ? "emerald" : "amber"} />
               <p className="mt-1.5 text-xs text-slate-500">
                 {z.wardsCovered}/{z.wardsTotal} wards covered · {z.active} active
               </p>
-            </div>
+            </Link>
           ))}
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Registry total</p>
@@ -59,7 +64,7 @@ export default function TerritoriesPage({
         </div>
       )}
 
-      {tab === "map" && <TerritoryMap retailers={retailers} />}
+      {tab === "map" && <TerritoryMap retailers={retailers} initialZone={searchParams.zone ?? null} />}
 
       {tab === "hierarchy" && <TerritoryHierarchy />}
     </div>

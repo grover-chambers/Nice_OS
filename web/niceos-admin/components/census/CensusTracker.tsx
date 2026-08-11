@@ -127,6 +127,7 @@ export default function CensusTracker() {
           sub={`of ${CENSUS_TOTAL_SHOPS.toLocaleString()} target shops`}
           icon={<ClipboardList size={16} />}
           tone="emerald"
+          href="/census?tab=map"
         />
         <StatCard
           label="Completion"
@@ -134,6 +135,7 @@ export default function CensusTracker() {
           sub={`by day ${day} of ${CENSUS_DAYS}`}
           icon={<Target size={16} />}
           tone="blue"
+          href="/census?tab=map"
         />
         <StatCard
           label="New registered"
@@ -141,6 +143,7 @@ export default function CensusTracker() {
           sub={`${totalClosed.toLocaleString()} closed / churned`}
           icon={<FilePlus2 size={16} />}
           tone="violet"
+          href="/retailers"
         />
         <StatCard
           label="Pace per officer"
@@ -148,6 +151,7 @@ export default function CensusTracker() {
           sub={`target ${CENSUS_PACE_MIN}–${CENSUS_PACE_MAX} shops/person/day`}
           icon={<Users size={16} />}
           tone="amber"
+          href="/rep-management"
         />
       </div>
 

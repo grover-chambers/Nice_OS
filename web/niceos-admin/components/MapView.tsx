@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
 import type { WardProperties } from "@/lib/geo/nairobi-wards";
 import type { Retailer } from "@/lib/data/types";
+import { useMapFit } from "@/lib/hooks/useMapFit";
 import { cn } from "@/lib/utils";
 
 const ZONE_COLORS: Record<string, string> = {
@@ -235,6 +236,7 @@ export default function MapView({
       setReady(true);
       mapRef.current = map;
       onReady?.(map);
+      map.resize();
       applyWardPaint(map);
       if (!route) {
         const b = new maplibregl.LngLatBounds();
@@ -251,15 +253,7 @@ export default function MapView({
 
     mapRef.current = map;
 
-    const containerEl = containerRef.current;
-    const ro = new ResizeObserver(() => {
-      mapRef.current?.resize();
-    });
-    if (containerEl) ro.observe(containerEl);
-    requestAnimationFrame(() => map.resize());
-
     return () => {
-      ro.disconnect();
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
@@ -267,6 +261,8 @@ export default function MapView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useMapFit(mapRef, containerRef);
 
   const applyWardPaint = useCallback(
     (map: maplibregl.Map) => {
@@ -449,7 +445,7 @@ export default function MapView({
 
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-slate-200 bg-white", className)}>
-      <div ref={containerRef} className="h-full w-full" aria-label="Nairobi map" />
+      <div ref={containerRef} className="absolute inset-0" aria-label="Nairobi map" />
       <div className="absolute left-3 top-3 z-10 flex overflow-hidden rounded-md border border-slate-200 bg-white/95 text-xs font-semibold shadow-sm">
         <button
           onClick={() => toggleBasemap("minimal")}

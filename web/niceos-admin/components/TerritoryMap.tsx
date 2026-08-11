@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ExternalLink, Maximize2, Minimize2 } from "lucide-react";
+import { ExternalLink, Maximize2, Minimize2, Settings2 } from "lucide-react";
 import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
 import { WARD_ZONES, type WardProperties } from "@/lib/geo/nairobi-wards";
 import { NAIROBI_CORRIDORS } from "@/lib/geo/nairobi-corridors";
 import { retailerStatusMeta } from "@/lib/status";
 import { CENSUS_AREAS } from "@/lib/data/census";
+import { useMapFit } from "@/lib/hooks/useMapFit";
 import { zoneColor } from "@/lib/status";
 import type { Retailer } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
@@ -72,18 +73,33 @@ function buildWardGeo(counts?: Map<string, number>) {
   } as any;
 }
 
+function zoneBounds(zone: string): [number, number][] {
+  const coords: [number, number][] = [];
+  for (const f of TERRITORY_WARDS.features) {
+    if (f.properties.zone !== zone) continue;
+    const c =
+      f.geometry.type === "MultiPolygon"
+        ? (f.geometry.coordinates as number[][][][]).flat(2)
+        : (f.geometry.coordinates as number[][][]).flat(1);
+    coords.push(...(c as [number, number][]));
+  }
+  return coords;
+}
+
 type TerritoryMapProps = {
   retailers?: Retailer[];
   className?: string;
   standalone?: boolean;
+  initialZone?: string | null;
 };
 
-export default function TerritoryMap({ retailers, className, standalone }: TerritoryMapProps) {
+export default function TerritoryMap({ retailers, className, standalone, initialZone }: TerritoryMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const applyPaintRef = useRef<() => void>(() => {});
   const readyRef = useRef(false);
+  const [ready, setReady] = useState(false);
 
   const [mode, setMode] = useState<"zone" | "density" | "coverage">("zone");
   const [basemap, setBasemap] = useState<"minimal" | "streets">("minimal");
@@ -91,9 +107,12 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
   const [showCorridors, setShowCorridors] = useState(false);
   const [showRetailers, setShowRetailers] = useState(true);
   const [showCensusAreas, setShowCensusAreas] = useState(true);
-  const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [activeZone, setActiveZone] = useState<string | null>(
+    initialZone && (WARD_ZONES as readonly string[]).includes(initialZone) ? initialZone : null
+  );
   const [selectedWard, setSelectedWard] = useState<WardProperties | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState(false);
 
   const wardCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -378,9 +397,21 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
       map.getCanvas().style.cursor = "";
       popupRef.current?.remove();
     });
+    map.on("click", "census-areas-circle", (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const g = f.geometry as { type: string; coordinates: [number, number] };
+      if (g.type !== "Point") return;
+      map.easeTo({
+        center: g.coordinates,
+        zoom: Math.max(map.getZoom(), 13.5),
+        duration: 700,
+      });
+    });
 
     map.on("load", () => {
       readyRef.current = true;
+      setReady(true);
       applyPaintRef.current();
       const b = new maplibregl.LngLatBounds();
       TERRITORY_WARDS.features.forEach((f) => {
@@ -395,15 +426,7 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
 
     mapRef.current = map;
 
-    const containerEl = mapContainerRef.current;
-    const ro = new ResizeObserver(() => {
-      mapRef.current?.resize();
-    });
-    if (containerEl) ro.observe(containerEl);
-    requestAnimationFrame(() => map.resize());
-
     return () => {
-      ro.disconnect();
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
@@ -411,6 +434,32 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useMapFit(mapRef, mapContainerRef);
+
+  // Auto-zoom to a selected zone; reset when cleared.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (!activeZone) {
+      const b = new maplibregl.LngLatBounds();
+      TERRITORY_WARDS.features.forEach((f) => {
+        const coords =
+          f.geometry.type === "MultiPolygon"
+            ? (f.geometry.coordinates as number[][][][]).flat(2)
+            : (f.geometry.coordinates as number[][][]).flat(1);
+        coords.forEach((c) => b.extend(c as [number, number]));
+      });
+      map.fitBounds(b, { padding: 30, maxZoom: 12, duration: 900 });
+      return;
+    }
+    const pts = zoneBounds(activeZone);
+    if (pts.length === 0) return;
+    const b = new maplibregl.LngLatBounds();
+    pts.forEach((c) => b.extend(c));
+    map.fitBounds(b, { padding: 60, maxZoom: 13, duration: 900 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeZone, ready]);
 
   useEffect(() => {
     applyPaintRef.current = applyPaint;
@@ -480,12 +529,30 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
   return (
     <div
       className={cn(
-        "flex h-[75vh] min-h-[560px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:flex-row",
+        "relative flex h-[75vh] min-h-[560px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:flex-row",
         expanded && "fixed inset-0 z-50 h-screen w-screen rounded-none",
         className
       )}
     >
-      <aside className="flex w-full flex-col gap-4 overflow-y-auto border-b border-slate-200 bg-slate-50 p-4 md:w-80 md:border-b-0 md:border-r">
+      <aside
+        className={cn(
+          "z-30 flex flex-col gap-4 overflow-y-auto bg-slate-50 p-4",
+          mobilePanel
+            ? "absolute inset-x-0 bottom-0 max-h-[65%] rounded-t-2xl border-t border-slate-200 shadow-xl md:static md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-t-0 md:border-r md:shadow-none"
+            : "hidden md:flex md:w-80 md:shrink-0 md:border-r md:border-b-0"
+        )}
+      >
+        {mobilePanel && (
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2 md:hidden">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Map controls</span>
+            <button
+              onClick={() => setMobilePanel(false)}
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+        )}
         <div>
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
             Ward colouring
@@ -754,12 +821,19 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
         </div>
       </aside>
 
-      <div className="relative flex-1">
+      <div className="relative flex-1 min-w-0">
         <div
           ref={mapContainerRef}
-          className="h-full w-full"
+          className="absolute inset-0"
           aria-label="Nairobi ward map"
         />
+        <button
+          onClick={() => setMobilePanel(true)}
+          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-md border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-white md:hidden"
+          title="Map controls"
+        >
+          <Settings2 size={16} />
+        </button>
         <div className="pointer-events-none absolute left-3 top-3 z-10 flex gap-4 rounded-md bg-white/90 px-3 py-2 text-xs shadow">
           <div>
             <div className="text-sm font-bold text-emerald-800">

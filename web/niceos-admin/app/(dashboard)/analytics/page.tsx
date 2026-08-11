@@ -93,10 +93,10 @@ export default function AnalyticsPage() {
       <DemoBanner />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Avg health score" value={avgHealth} icon={<Activity size={16} />} tone="blue" />
-        <StatCard label="Churn rate" value={`${churnRate}%`} sub={`${churned} churned`} icon={<AlertTriangle size={16} />} tone={churnRate > 10 ? "rose" : "amber"} />
-        <StatCard label="Coverage" value={`${Math.round((active.length / retailers.length) * 100)}%`} sub={`${active.length} active outlets`} icon={<Store size={16} />} tone="emerald" />
-        <StatCard label="High-priority pipeline" value={fmtKes(pipeline)} sub="monthly potential" icon={<TrendingUp size={16} />} tone="violet" />
+        <StatCard label="Avg health score" value={avgHealth} icon={<Activity size={16} />} tone="blue" href="/retailers" />
+        <StatCard label="Churn rate" value={`${churnRate}%`} sub={`${churned} churned`} icon={<AlertTriangle size={16} />} tone={churnRate > 10 ? "rose" : "amber"} href="/alerts" />
+        <StatCard label="Coverage" value={`${Math.round((active.length / retailers.length) * 100)}%`} sub={`${active.length} active outlets`} icon={<Store size={16} />} tone="emerald" href="/territories?tab=map" />
+        <StatCard label="High-priority pipeline" value={fmtKes(pipeline)} sub="monthly potential" icon={<TrendingUp size={16} />} tone="violet" href="/routes" />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">

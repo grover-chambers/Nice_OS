@@ -68,6 +68,7 @@ export default function DashboardPage() {
           sub={`${fmtNum(d.totals.active)} active`}
           icon={<Store size={16} />}
           tone="blue"
+          href="/retailers"
         />
         <StatCard
           label="Coverage"
@@ -76,6 +77,7 @@ export default function DashboardPage() {
           icon={<MapPin size={16} />}
           tone="emerald"
           trend={{ dir: d.coveragePct >= 70 ? "up" : "down", text: "vs launch", good: true }}
+          href="/territories?tab=map"
         />
         <StatCard
           label="Visits today"
@@ -83,6 +85,7 @@ export default function DashboardPage() {
           sub={`${d.verificationRate}% GPS verified`}
           icon={<Activity size={16} />}
           tone="violet"
+          href="/visits"
         />
         <StatCard
           label="Orders today"
@@ -90,6 +93,7 @@ export default function DashboardPage() {
           sub={fmtKes(d.orderValueToday)}
           icon={<ShoppingCart size={16} />}
           tone="emerald"
+          href="/routes"
         />
         <StatCard
           label="At risk / churned"
@@ -97,6 +101,7 @@ export default function DashboardPage() {
           sub={`${fmtNum(d.totals.prospects)} prospects`}
           icon={<AlertTriangle size={16} />}
           tone="amber"
+          href="/alerts"
         />
         <StatCard
           label="Field team"
@@ -104,6 +109,7 @@ export default function DashboardPage() {
           sub={`${d.onRouteNow} on route now`}
           icon={<Users size={16} />}
           tone="slate"
+          href="/rep-management"
         />
       </div>
 

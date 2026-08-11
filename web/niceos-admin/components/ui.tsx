@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -86,6 +88,7 @@ export function StatCard({
   icon,
   tone = "default",
   trend,
+  href,
 }: {
   label: string;
   value: ReactNode;
@@ -93,9 +96,10 @@ export function StatCard({
   icon?: ReactNode;
   tone?: Tone;
   trend?: { dir: "up" | "down"; text: string; good?: boolean };
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  const inner = (
+    <>
       <div className="flex items-start justify-between">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
           {label}
@@ -104,7 +108,10 @@ export function StatCard({
           <span className={cn("rounded-lg p-1.5", toneBg[tone])}>{icon}</span>
         )}
       </div>
-      <div className="mt-2 text-2xl font-bold text-slate-900">{value}</div>
+      <div className="mt-2 flex items-center gap-1.5 text-2xl font-bold text-slate-900">
+        {value}
+        {href && <ArrowUpRight className="text-slate-300" size={16} />}
+      </div>
       {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}
       {trend && (
         <div
@@ -119,8 +126,23 @@ export function StatCard({
           {trend.text}
         </div>
       )}
-    </div>
+    </>
   );
+
+  const cls = cn(
+    "rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition",
+    href && "cursor-pointer hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={cn("block", cls)}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={cls}>{inner}</div>;
 }
 
 export function Progress({

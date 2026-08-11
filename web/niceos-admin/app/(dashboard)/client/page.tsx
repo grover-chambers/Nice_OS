@@ -55,6 +55,7 @@ export default function ClientPage() {
           sub={`${d.zoneCoverage.reduce((s, z) => s + z.wardsCovered, 0)} wards active`}
           icon={<BadgeCheck size={16} />}
           tone="emerald"
+          href="/territories?tab=map"
         />
         <StatCard
           label="Active outlets"
@@ -62,6 +63,7 @@ export default function ClientPage() {
           sub={`${fmtNum(d.totals.retailers)} registered`}
           icon={<Building2 size={16} />}
           tone="blue"
+          href="/retailers"
         />
         <StatCard
           label="Orders (7d)"
@@ -69,12 +71,14 @@ export default function ClientPage() {
           sub="week on week"
           icon={<Package size={16} />}
           tone="violet"
+          href="/routes"
         />
         <StatCard
           label="Order value (7d)"
           value={fmtKes(d.weeklyTrend.reduce((s, t) => s + t.value, 0))}
           icon={<TrendingUp size={16} />}
           tone="emerald"
+          href="/routes"
         />
       </div>
 
