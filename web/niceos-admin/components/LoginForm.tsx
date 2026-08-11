@@ -13,11 +13,18 @@ export default function LoginForm() {
 
   if (!supabaseConfigured) {
     return (
-      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        Login is disabled — Supabase is not configured. Copy{" "}
-        <code className="rounded bg-amber-100 px-1">.env.example</code> to{" "}
-        <code className="rounded bg-amber-100 px-1">.env.local</code> and fill
-        in your credentials, then restart <code className="rounded bg-amber-100 px-1">npm run dev</code>.
+      <div className="space-y-4">
+        <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Live login is not configured yet. You can still explore the platform
+          in demo mode.
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className="w-full rounded bg-primary-600 py-2 text-sm font-medium text-white hover:bg-primary-700"
+        >
+          Explore demo dashboard
+        </button>
       </div>
     );
   }
@@ -89,6 +96,13 @@ export default function LoginForm() {
         className="w-full rounded bg-primary-600 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
       >
         {loading ? "Signing in..." : "Sign in"}
+      </button>
+      <button
+        type="button"
+        onClick={() => router.push("/dashboard")}
+        className="w-full rounded border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+      >
+        Explore demo dashboard
       </button>
     </form>
   );
