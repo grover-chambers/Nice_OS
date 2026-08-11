@@ -10,11 +10,11 @@ export default function DashboardLayout({
 }) {
   return (
     <RoleProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-dvh overflow-hidden">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopNav />
-          <main className="min-w-0 flex-1 bg-slate-50 p-6">{children}</main>
+          <main className="min-w-0 flex-1 overflow-y-auto bg-slate-50 p-6">{children}</main>
         </div>
       </div>
       <ToastViewport />

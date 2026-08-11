@@ -55,7 +55,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-emerald-950 text-slate-100">
+    <aside className="flex h-full w-64 shrink-0 flex-col bg-emerald-950 text-slate-100">
       <div className="px-5 pb-4 pt-6">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-black text-emerald-950">
