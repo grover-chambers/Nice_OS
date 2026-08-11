@@ -37,7 +37,7 @@ const competitorObservations = [...seed.competitorObservations];
 
 export { dateString, todayString } from "./seed";
 
-export const ZONES: WardZone[] = ["Western", "Central", "Northern", "Eastern", "South-Eastern", "Southern"];
+export const ZONES: WardZone[] = ["Kiambu", "Central", "Northern", "Eastern", "South-Eastern", "Kajiado"];
 
 // --- tiny utils -------------------------------------------------------------
 
@@ -844,7 +844,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     nav: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/territories", label: "Territories" },
-      { href: "/territories/manage", label: "Territory Hierarchy" },
+      { href: "/census", label: "Census" },
       { href: "/retailers", label: "Retailers" },
       { href: "/routes", label: "Routes" },
       { href: "/visits", label: "Visits" },
@@ -863,6 +863,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     nav: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/territories", label: "Territories" },
+      { href: "/census", label: "Census" },
       { href: "/retailers", label: "Retailers" },
       { href: "/routes", label: "Routes" },
       { href: "/visits", label: "Visits" },
@@ -891,6 +892,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     description: "Executive report view for the Nice Limited CEO.",
     nav: [
       { href: "/client", label: "Overview" },
+      { href: "/census", label: "Census" },
       { href: "/analytics", label: "Market Analytics" },
       { href: "/reports", label: "Reports" },
     ],

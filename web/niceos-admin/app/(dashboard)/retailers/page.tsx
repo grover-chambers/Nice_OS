@@ -100,7 +100,7 @@ export default function RetailersPage() {
               className="rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-medium text-slate-700 outline-none focus:border-slate-900"
             >
               <option value="all">All zones</option>
-              {["Western", "Central", "Northern", "Eastern", "South-Eastern", "Southern"].map((z) => (
+              {["Kiambu", "Central", "Northern", "Eastern", "South-Eastern", "Kajiado"].map((z) => (
                 <option key={z} value={z}>{z}</option>
               ))}
             </select>

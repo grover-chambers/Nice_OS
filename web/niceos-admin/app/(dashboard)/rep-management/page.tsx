@@ -40,7 +40,7 @@ export default function RepManagementPage() {
         <Segmented
           options={[
             { value: "all", label: "All zones" },
-            ...(["Western", "Central", "Northern", "Eastern", "South-Eastern", "Southern"] as WardZone[]).map((z) => ({
+            ...(["Kiambu", "Central", "Northern", "Eastern", "South-Eastern", "Kajiado"] as WardZone[]).map((z) => ({
               value: z,
               label: z,
             })),

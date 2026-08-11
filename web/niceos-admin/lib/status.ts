@@ -32,12 +32,12 @@ export const visitStatusMeta: Record<VisitStatus, { label: string; bg: string }>
 };
 
 export const zoneColors: Record<WardZone, string> = {
-  Western: "#4C8C40",
+  Kiambu: "#4C8C40",
   Central: "#D98A2B",
   Northern: "#2E6E9E",
   Eastern: "#D4B32A",
   "South-Eastern": "#8B4C9E",
-  Southern: "#C1447A",
+  Kajiado: "#C1447A",
 };
 
 export const zoneColor = (zone: WardZone) => zoneColors[zone];

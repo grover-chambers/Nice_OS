@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Map, ShoppingBag, Route as RouteIcon, ClipboardCheck, BarChart3, FileText, Bell, Settings, Grid3x3 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutDashboard, Users, Map, ShoppingBag, Route as RouteIcon, ClipboardCheck, BarChart3, FileText, Bell, Settings, Grid3x3, LogOut, ListChecks } from "lucide-react";
 import { useRole } from "@/lib/role-context";
 import { ROLE_CONFIG } from "@/lib/data";
 import { getAlertCounts } from "@/lib/data";
@@ -22,6 +22,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; size?: s
   Alerts: Bell,
   "Users & Roles": Users,
   Settings: Settings,
+  "Census": ListChecks,
   Overview: BarChart3,
   "Market Analytics": BarChart3,
   "My Dashboard": LayoutDashboard,
@@ -39,11 +40,22 @@ function isActive(pathname: string, href: string) {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { role, setRole, config } = useRole();
   const alertCount = getAlertCounts().unread;
 
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem("niceos-role");
+    } catch {
+      /* ignore */
+    }
+    router.push("/login");
+    router.refresh();
+  };
+
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-emerald-950 text-slate-100">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-emerald-950 text-slate-100">
       <div className="px-5 pb-4 pt-6">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-black text-emerald-950">
@@ -90,6 +102,28 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 p-3">
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <Link
+            href="/settings"
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors",
+              pathname === "/settings"
+                ? "bg-emerald-500 text-emerald-950"
+                : "bg-white/5 text-slate-200 hover:bg-white/10"
+            )}
+          >
+            <Settings size={14} />
+            Settings
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-white/5 px-2 py-2 text-xs font-medium text-slate-200 transition-colors hover:bg-rose-500/20 hover:text-rose-200"
+          >
+            <LogOut size={14} />
+            Logout
+          </button>
+        </div>
         <label className="mb-1 block px-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300/60">
           Preview role
         </label>

@@ -9,16 +9,18 @@ import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
 import { WARD_ZONES, type WardProperties } from "@/lib/geo/nairobi-wards";
 import { NAIROBI_CORRIDORS } from "@/lib/geo/nairobi-corridors";
 import { retailerStatusMeta } from "@/lib/status";
+import { CENSUS_AREAS } from "@/lib/data/census";
+import { zoneColor } from "@/lib/status";
 import type { Retailer } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 
 const ZONE_COLORS: Record<string, string> = {
-  Western: "#4C8C40",
+  Kiambu: "#4C8C40",
   Central: "#D98A2B",
   Northern: "#2E6E9E",
   Eastern: "#D4B32A",
   "South-Eastern": "#8B4C9E",
-  Southern: "#C1447A",
+  Kajiado: "#C1447A",
 };
 
 const DENSITY_STOPS: [number, string][] = [
@@ -88,6 +90,7 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
   const [outlineOnly, setOutlineOnly] = useState(false);
   const [showCorridors, setShowCorridors] = useState(false);
   const [showRetailers, setShowRetailers] = useState(true);
+  const [showCensusAreas, setShowCensusAreas] = useState(true);
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [selectedWard, setSelectedWard] = useState<WardProperties | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -119,6 +122,23 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
       })),
     };
   }, [retailers]);
+
+  const censusAreaFeatures = useMemo(
+    () => ({
+      type: "FeatureCollection" as const,
+      features: CENSUS_AREAS.map((a) => ({
+        type: "Feature" as const,
+        properties: {
+          name: a.name,
+          zone: a.zone,
+          shops: a.shops,
+          color: zoneColor(a.zone),
+        },
+        geometry: { type: "Point" as const, coordinates: [a.lng, a.lat] },
+      })),
+    }),
+    []
+  );
 
   const totalPopulation = TERRITORY_WARDS.features.reduce(
     (s, f) => s + f.properties.population,
@@ -186,6 +206,7 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
           wards: { type: "geojson", data: wardGeo },
           corridors: { type: "geojson", data: { type: "FeatureCollection", features: CORRIDOR_FEATURES } as any },
           retailers: { type: "geojson", data: (retailerFeatures ?? emptyFC) as any },
+          censusAreas: { type: "geojson", data: censusAreaFeatures as any },
         },
         layers: [
           {
@@ -251,6 +272,36 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
               "circle-stroke-width": 1.2,
             },
           },
+          {
+            id: "census-areas-circle",
+            type: "circle",
+            source: "censusAreas",
+            layout: { visibility: showCensusAreas ? "visible" : "none" },
+            paint: {
+              "circle-radius": 6,
+              "circle-color": ["get", "color"],
+              "circle-stroke-color": "#FFFFFF",
+              "circle-stroke-width": 1.8,
+            },
+          },
+          {
+            id: "census-areas-symbol",
+            type: "symbol",
+            source: "censusAreas",
+            layout: {
+              visibility: showCensusAreas ? "visible" : "none",
+              "text-field": ["get", "name"],
+              "text-offset": [0, 1.3],
+              "text-anchor": "top",
+              "text-size": 11,
+              "text-font": ["Open Sans Bold"],
+            },
+            paint: {
+              "text-color": "#1F2937",
+              "text-halo-color": "#FFFFFF",
+              "text-halo-width": 1.5,
+            },
+          },
         ],
       },
       center: [-1.35, 36.87],
@@ -311,9 +362,35 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
       if (id) window.location.href = `/retailers/${id}`;
     });
 
+    map.on("mouseenter", "census-areas-circle", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      const f = e.features?.[0];
+      if (f && popupRef.current) {
+        popupRef.current
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${f.properties.name}</strong><br/><span style="color:#64748b">${f.properties.zone} zone · ~${f.properties.shops} shops target</span>`
+          )
+          .addTo(map);
+      }
+    });
+    map.on("mouseleave", "census-areas-circle", () => {
+      map.getCanvas().style.cursor = "";
+      popupRef.current?.remove();
+    });
+
     map.on("load", () => {
       readyRef.current = true;
       applyPaintRef.current();
+      const b = new maplibregl.LngLatBounds();
+      TERRITORY_WARDS.features.forEach((f) => {
+        const coords =
+          f.geometry.type === "MultiPolygon"
+            ? (f.geometry.coordinates as number[][][][]).flat(2)
+            : (f.geometry.coordinates as number[][][]).flat(1);
+        coords.forEach((c) => b.extend(c as [number, number]));
+      });
+      map.fitBounds(b, { padding: 30, maxZoom: 12, duration: 0 });
     });
 
     mapRef.current = map;
@@ -357,6 +434,15 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
     (map.getSource("retailers") as maplibregl.GeoJSONSource).setData((retailerFeatures ?? emptyFC) as any);
     map.setLayoutProperty("retailers-circle", "visibility", showRetailers && retailerFeatures ? "visible" : "none");
   }, [retailerFeatures, showRetailers]);
+
+  // Census area markers visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !map.getLayer("census-areas-circle")) return;
+    const vis = showCensusAreas ? "visible" : "none";
+    map.setLayoutProperty("census-areas-circle", "visibility", vis);
+    map.setLayoutProperty("census-areas-symbol", "visibility", vis);
+  }, [showCensusAreas]);
 
   // Resize when expanded toggles so the canvas refills the overlay
   useEffect(() => {
@@ -575,6 +661,24 @@ export default function TerritoryMap({ retailers, className, standalone }: Terri
               </div>
             ))}
           </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Census areas
+          </h3>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={showCensusAreas}
+              onChange={(e) => setShowCensusAreas(e.target.checked)}
+              className="accent-emerald-700"
+            />
+            Show census area pins
+          </label>
+          <p className="mt-1.5 text-[11px] text-slate-500">
+            {CENSUS_AREAS.length} areas across 4 census routes.
+          </p>
         </div>
 
         <div>

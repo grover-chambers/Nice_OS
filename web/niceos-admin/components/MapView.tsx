@@ -9,12 +9,12 @@ import type { Retailer } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 
 const ZONE_COLORS: Record<string, string> = {
-  Western: "#4C8C40",
+  Kiambu: "#4C8C40",
   Central: "#D98A2B",
   Northern: "#2E6E9E",
   Eastern: "#D4B32A",
   "South-Eastern": "#8B4C9E",
-  Southern: "#C1447A",
+  Kajiado: "#C1447A",
 };
 
 const DENSITY_STOPS: [number, string][] = [
@@ -236,6 +236,17 @@ export default function MapView({
       mapRef.current = map;
       onReady?.(map);
       applyWardPaint(map);
+      if (!route) {
+        const b = new maplibregl.LngLatBounds();
+        TERRITORY_WARDS.features.forEach((f) => {
+          const coords =
+            f.geometry.type === "MultiPolygon"
+              ? (f.geometry.coordinates as number[][][][]).flat(2)
+              : (f.geometry.coordinates as number[][][]).flat(1);
+          coords.forEach((c) => b.extend(c as [number, number]));
+        });
+        map.fitBounds(b, { padding: 30, maxZoom: 12, duration: 0 });
+      }
     });
 
     mapRef.current = map;

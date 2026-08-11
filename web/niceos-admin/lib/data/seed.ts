@@ -135,10 +135,10 @@ export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: numb
 // Nairobi-region territory (includes satellite town wards).
 const ZONE_BBOX: Record<WardZone, [number, number, number, number]> = {
   Northern: [-1.05, 36.8, -1.27, 36.985], // minLat, minLng, maxLat, maxLng
-  Western: [-1.245, 36.64, -1.325, 36.815],
+  Kiambu: [-1.245, 36.64, -1.325, 36.815],
   Central: [-1.27, 36.79, -1.315, 36.875],
   Eastern: [-1.26, 36.87, -1.325, 36.985],
-  Southern: [-1.3, 36.6, -1.46, 36.84],
+  Kajiado: [-1.3, 36.6, -1.46, 36.84],
   "South-Eastern": [-1.28, 36.7, -1.61, 37.02],
 };
 
@@ -193,9 +193,9 @@ function genReps(): Rep[] {
   const zoneRepCount: [WardZone, number][] = [
     ["Central", 2],
     ["Northern", 2],
-    ["Western", 2],
+    ["Kiambu", 2],
     ["Eastern", 1],
-    ["Southern", 1],
+    ["Kajiado", 1],
     ["South-Eastern", 2],
   ];
   const reps: Rep[] = [];

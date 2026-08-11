@@ -3,12 +3,12 @@
 export type Role = "admin" | "territory_manager" | "sales_rep" | "ceo";
 
 export type WardZone =
-  | "Western"
+  | "Kiambu"
   | "Central"
   | "Northern"
   | "Eastern"
   | "South-Eastern"
-  | "Southern";
+  | "Kajiado";
 
 export type RetailerStatus =
   | "active"
