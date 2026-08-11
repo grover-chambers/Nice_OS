@@ -10,6 +10,10 @@ import {
   Users,
   Bell,
   Smartphone,
+  Check,
+  MapPin,
+  Shield,
+  TrendingUp,
 } from "lucide-react";
 import LoginForm from "@/components/LoginForm";
 
@@ -55,8 +59,8 @@ const features = [
 const rolePointers = [
   {
     role: "Sales Rep",
+    icon: MapPin,
     color: "text-emerald-300",
-    dot: "bg-emerald-400",
     points: [
       "Your route, your retailers, your visits",
       "Check in with GPS + capture stock, photos & orders",
@@ -65,8 +69,8 @@ const rolePointers = [
   },
   {
     role: "Territory Manager",
+    icon: RouteIcon,
     color: "text-amber-300",
-    dot: "bg-amber-400",
     points: [
       "Build & approve routes for your reps",
       "Monitor coverage and rep activity live",
@@ -75,8 +79,8 @@ const rolePointers = [
   },
   {
     role: "Platform Admin",
+    icon: Shield,
     color: "text-sky-300",
-    dot: "bg-sky-400",
     points: [
       "Configure territories, retailers and users",
       "Manage roles, access and settings",
@@ -85,8 +89,8 @@ const rolePointers = [
   },
   {
     role: "CEO / Executive",
+    icon: TrendingUp,
     color: "text-slate-200",
-    dot: "bg-slate-300",
     points: [
       "Executive market overview at a glance",
       "Market analytics, coverage and reports",
@@ -99,10 +103,9 @@ export default function LoginPage() {
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-50 text-slate-900">
       {/* ============ LEFT: SCROLLABLE INFO PANEL (2/3) ============ */}
-      <section className="relative hidden flex-1 overflow-hidden text-slate-100 lg:flex">
+      <section className="relative hidden w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-slate-950 to-slate-900 text-slate-100 lg:flex lg:w-2/3">
         <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_15%_10%,rgba(16,185,129,0.25),transparent_45%),radial-gradient(circle_at_90%_20%,rgba(245,158,11,0.10),transparent_40%)]" />
-        <div className="bg-gradient-to-br from-emerald-950 via-slate-950 to-slate-900">
-          <div className="relative z-10 h-full overflow-y-auto px-12 py-10">
+        <div className="relative z-10 h-full w-full overflow-y-auto px-12 py-10">
             <div className="mx-auto max-w-2xl">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-lg font-extrabold text-emerald-950 shadow-lg shadow-emerald-500/30">
@@ -164,13 +167,13 @@ export default function LoginPage() {
                       className="rounded-xl border border-white/10 bg-white/5 p-4"
                     >
                       <p className={`flex items-center gap-2 text-sm font-semibold ${rp.color}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${rp.dot}`} />
+                        <rp.icon size={15} className="shrink-0" />
                         {rp.role}
                       </p>
                       <ul className="mt-2 space-y-1.5">
                         {rp.points.map((p) => (
                           <li key={p} className="flex gap-2 text-xs leading-relaxed text-slate-400">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+                            <Check size={13} className="mt-0.5 shrink-0 text-slate-500" />
                             {p}
                           </li>
                         ))}
@@ -200,7 +203,6 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-        </div>
       </section>
 
       {/* ============ RIGHT: LOGIN PANEL (1/3) ============ */}
