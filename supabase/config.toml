@@ -33,3 +33,5 @@ policy = "oneshot"
 
 [edge_functions]
 forward-order-intent = { verify_jwt = true }
+sync-push = { verify_jwt = true }
+sync-pull = { verify_jwt = true }

@@ -34,5 +34,4 @@ mobile/niceos_app/.packages
 mobile/niceos_app/pubspec.lock
 
 # Docs
-docs/api-contracts/*.md
 docs/supabase-migrations/*.sql
