@@ -12,24 +12,32 @@ export function serviceClient() {
   });
 }
 
-export interface SyncContext {
+export interface UserContext {
   user: { id: string; email?: string };
   jwt: string;
   profile: { id: string; role: string; status: string };
-  rep: { id: string; zone: string | null; status: string };
   db: ReturnType<typeof serviceClient>;
 }
 
-// Resolves the request's Bearer token to an active sales_rep. Returns either
-// a context or a short-circuited error Response. Only sales_reps may sync.
-export async function requireRep(
+export interface RepContext extends UserContext {
+  rep: { id: string; zone: string | null; status: string; phone?: string | null };
+}
+
+// Resolves the Bearer token to a user + their active profile. Used by
+// functions that accept any authenticated operator (e.g. the OTP flow).
+export async function requireUser(
   req: Request
-): Promise<{ ctx: SyncContext; error: Response | null }> {
+): Promise<{ ctx: UserContext; error: Response | null }> {
   const jwt = (req.headers.get("Authorization") ?? "").replace(
     /^Bearer\s+/i,
     ""
   );
-  if (!jwt) return { ctx: null as unknown as SyncContext, error: json({ error: "Missing Authorization header" }, 401) };
+  if (!jwt) {
+    return {
+      ctx: null as unknown as UserContext,
+      error: json({ error: "Missing Authorization header" }, 401),
+    };
+  }
 
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
@@ -39,7 +47,10 @@ export async function requireRep(
     error: authError,
   } = await userClient.auth.getUser();
   if (authError || !user) {
-    return { ctx: null as unknown as SyncContext, error: json({ error: "Invalid or expired token" }, 401) };
+    return {
+      ctx: null as unknown as UserContext,
+      error: json({ error: "Invalid or expired token" }, 401),
+    };
   }
 
   const db = serviceClient();
@@ -49,20 +60,42 @@ export async function requireRep(
     .eq("auth_id", user.id)
     .maybeSingle();
   if (profileError || !profile || profile.status !== "active") {
-    return { ctx: null as unknown as SyncContext, error: json({ error: "Active profile not found" }, 403) };
-  }
-
-  const { data: rep, error: repError } = await db
-    .from("reps")
-    .select("id, zone, status")
-    .eq("id", profile.id)
-    .maybeSingle();
-  if (repError || !rep || rep.status !== "active") {
-    return { ctx: null as unknown as SyncContext, error: json({ error: "Sync is available to active sales reps only" }, 403) };
+    return {
+      ctx: null as unknown as UserContext,
+      error: json({ error: "Active profile not found" }, 403),
+    };
   }
 
   return {
-    ctx: { user, jwt, profile, rep, db },
+    ctx: { user, jwt, profile, db },
+    error: null,
+  };
+}
+
+// Sync functions require an active sales_rep.
+export async function requireRep(
+  req: Request
+): Promise<{ ctx: RepContext; error: Response | null }> {
+  const { ctx, error } = await requireUser(req);
+  if (error) return { ctx: null as unknown as RepContext, error };
+
+  const { data: rep, error: repError } = await ctx.db
+    .from("reps")
+    .select("id, zone, status, phone")
+    .eq("id", ctx.profile.id)
+    .maybeSingle();
+  if (repError || !rep || rep.status !== "active") {
+    return {
+      ctx: null as unknown as RepContext,
+      error: json(
+        { error: "Sync is available to active sales reps only" },
+        403
+      ),
+    };
+  }
+
+  return {
+    ctx: { ...ctx, rep: { id: rep.id, zone: rep.zone, status: rep.status, phone: rep.phone ?? null } },
     error: null,
   };
 }
