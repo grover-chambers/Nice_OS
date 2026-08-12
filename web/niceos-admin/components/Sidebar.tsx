@@ -9,6 +9,8 @@ import { getAlertCounts } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/data/types";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const iconMap: Record<string, React.ComponentType<{ className?: string; size?: string | number }>> = {
   Dashboard: LayoutDashboard,
   Territories: Map,
@@ -124,20 +126,24 @@ export default function Sidebar() {
             Logout
           </button>
         </div>
-        <label className="mb-1 block px-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300/60">
-          Preview role
-        </label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 outline-none focus:border-emerald-400"
-        >
-          {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => (
-            <option key={r} value={r}>
-              {ROLE_CONFIG[r].label}
-            </option>
-          ))}
-        </select>
+        {isDev && (
+          <div>
+            <label className="mb-1 block px-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300/60">
+              Preview role
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 outline-none focus:border-emerald-400"
+            >
+              {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_CONFIG[r].label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </aside>
   );
