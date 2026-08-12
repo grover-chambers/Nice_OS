@@ -1,4 +1,4 @@
-// Generated-by-hand types matching supabase/migrations/ (20260806000001..13).
+// Hand-maintained types matching supabase/migrations/ 000001–000022 + 000001–000003.
 // Regenerate later with: supabase gen types typescript --project-id zsprlozgdxzxeevvetmg
 
 export type Json = string | number | boolean | null | { [key: string]: Json | Json[] } | Json[];
@@ -309,6 +309,8 @@ export interface Database {
           visited_at: string | null;
           priority: Database["public"]["Enums"]["route_priority"];
           created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -324,6 +326,8 @@ export interface Database {
           visited_at?: string | null;
           priority?: Database["public"]["Enums"]["route_priority"];
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -339,6 +343,8 @@ export interface Database {
           visited_at?: string | null;
           priority?: Database["public"]["Enums"]["route_priority"];
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
@@ -364,8 +370,10 @@ export interface Database {
           order_value: number | null;
           outcome: Database["public"]["Enums"]["visit_status"];
           notes: string | null;
+          verification_method: string | null;
           created_at: string;
           updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -388,8 +396,10 @@ export interface Database {
           order_value?: number | null;
           outcome?: Database["public"]["Enums"]["visit_status"];
           notes?: string | null;
+          verification_method?: string | null;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -412,8 +422,10 @@ export interface Database {
           order_value?: number | null;
           outcome?: Database["public"]["Enums"]["visit_status"];
           notes?: string | null;
+          verification_method?: string | null;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
@@ -427,6 +439,8 @@ export interface Database {
           shelf: Database["public"]["Enums"]["shelf_level"] | null;
           price: number | null;
           created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -437,6 +451,8 @@ export interface Database {
           shelf?: Database["public"]["Enums"]["shelf_level"] | null;
           price?: number | null;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -447,6 +463,8 @@ export interface Database {
           shelf?: Database["public"]["Enums"]["shelf_level"] | null;
           price?: number | null;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
@@ -495,6 +513,8 @@ export interface Database {
           quantity: number;
           price: number;
           created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -504,6 +524,8 @@ export interface Database {
           quantity: number;
           price?: number;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -513,6 +535,8 @@ export interface Database {
           quantity?: number;
           price?: number;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
@@ -531,6 +555,8 @@ export interface Database {
           note: string | null;
           at: string;
           created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -546,6 +572,8 @@ export interface Database {
           note?: string | null;
           at?: string;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -561,6 +589,8 @@ export interface Database {
           note?: string | null;
           at?: string;
           created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
@@ -600,6 +630,303 @@ export interface Database {
           read?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sku_catalog: {
+        Row: {
+          id: string;
+          sku: string;
+          name: string;
+          category: string;
+          default_price_kes: number | null;
+          unit: string;
+          pack_size: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          sku: string;
+          name: string;
+          category?: string;
+          default_price_kes?: number | null;
+          unit?: string;
+          pack_size?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          sku?: string;
+          name?: string;
+          category?: string;
+          default_price_kes?: number | null;
+          unit?: string;
+          pack_size?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      competitor_brands: {
+        Row: {
+          id: string;
+          name: string;
+          segment: string;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          segment?: string;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          segment?: string;
+          active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      health_scores: {
+        Row: {
+          id: string;
+          retailer_id: string;
+          score: number;
+          churn_risk: string;
+          factors: Json;
+          computed_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          retailer_id: string;
+          score: number;
+          churn_risk?: string;
+          factors?: Json;
+          computed_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          retailer_id?: string;
+          score?: number;
+          churn_risk?: string;
+          factors?: Json;
+          computed_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      coverage_logs: {
+        Row: {
+          id: string;
+          territory_id: string | null;
+          ward: string | null;
+          zone: string | null;
+          rep_id: string | null;
+          event_type: string;
+          at: string;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          territory_id?: string | null;
+          ward?: string | null;
+          zone?: string | null;
+          rep_id?: string | null;
+          event_type: string;
+          at?: string;
+          note?: string | null;
+        };
+        Update: {
+          id?: string;
+          territory_id?: string | null;
+          ward?: string | null;
+          zone?: string | null;
+          rep_id?: string | null;
+          event_type?: string;
+          at?: string;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      opportunities: {
+        Row: {
+          id: string;
+          retailer_id: string;
+          type: Database["public"]["Enums"]["opportunity_type"];
+          potential_monthly_kes: number;
+          priority: string;
+          status: string;
+          reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          retailer_id: string;
+          type?: Database["public"]["Enums"]["opportunity_type"];
+          potential_monthly_kes?: number;
+          priority?: string;
+          status?: string;
+          reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          retailer_id?: string;
+          type?: Database["public"]["Enums"]["opportunity_type"];
+          potential_monthly_kes?: number;
+          priority?: string;
+          status?: string;
+          reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      stock_observations: {
+        Row: {
+          id: string;
+          visit_id: string | null;
+          retailer_id: string;
+          rep_id: string | null;
+          sku: string;
+          name: string | null;
+          qty: number;
+          shelf: Database["public"]["Enums"]["shelf_level"] | null;
+          price: number | null;
+          captured_at: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          visit_id?: string | null;
+          retailer_id: string;
+          rep_id?: string | null;
+          sku: string;
+          name?: string | null;
+          qty?: number;
+          shelf?: Database["public"]["Enums"]["shelf_level"] | null;
+          price?: number | null;
+          captured_at?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          visit_id?: string | null;
+          retailer_id?: string;
+          rep_id?: string | null;
+          sku?: string;
+          name?: string | null;
+          qty?: number;
+          shelf?: Database["public"]["Enums"]["shelf_level"] | null;
+          price?: number | null;
+          captured_at?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      shelf_photos: {
+        Row: {
+          id: string;
+          visit_id: string | null;
+          retailer_id: string;
+          rep_id: string | null;
+          file_path: string;
+          photo_type: string | null;
+          lat: number | null;
+          lng: number | null;
+          accuracy: number | null;
+          captured_at: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          visit_id?: string | null;
+          retailer_id: string;
+          rep_id?: string | null;
+          file_path: string;
+          photo_type?: string | null;
+          lat?: number | null;
+          lng?: number | null;
+          accuracy?: number | null;
+          captured_at?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          visit_id?: string | null;
+          retailer_id?: string;
+          rep_id?: string | null;
+          file_path?: string;
+          photo_type?: string | null;
+          lat?: number | null;
+          lng?: number | null;
+          accuracy?: number | null;
+          captured_at?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      auth_otp_challenges: {
+        Row: {
+          id: string;
+          profile_id: string;
+          code_hash: string;
+          expires_at: string;
+          attempts: number;
+          consumed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          code_hash: string;
+          expires_at: string;
+          attempts?: number;
+          consumed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          code_hash?: string;
+          expires_at?: string;
+          attempts?: number;
+          consumed_at?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -652,6 +979,18 @@ export interface Database {
         Args: { target_rep_id: string };
         Returns: boolean;
       };
+      sync_entity_table: {
+        Args: { p_entity: string };
+        Returns: string;
+      };
+      sync_apply: {
+        Args: { p_entity: string; p_rows: Json };
+        Returns: Json;
+      };
+      verify_visit_photos: {
+        Args: { p_visit_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
       user_role: "admin" | "territory_manager" | "sales_rep" | "ceo";
@@ -670,6 +1009,7 @@ export interface Database {
       competitor_activity: "price-drop" | "promo" | "new-listing" | "stockout" | "shelf-share";
       alert_category: "churn" | "competitive" | "stock" | "expiry" | "visit" | "route" | "system";
       alert_severity: "critical" | "warning" | "info";
+      opportunity_type: "reactivation" | "expansion" | "category-growth" | "promo-placement" | "stock-correct";
     };
     CompositeTypes: {
       [_ in never]: never;

@@ -5,3 +5,5 @@ export 'competitor_observation_model.dart';
 export 'order_intent_model.dart';
 export 'route_model.dart';
 export 'user_model.dart';
+export 'shelf_photo_model.dart';
+export 'stock_item_model.dart';

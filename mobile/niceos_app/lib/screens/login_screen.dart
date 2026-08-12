@@ -25,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
+      // After sign in, navigate to OTP screen or main app
+      // For now, navigate to today screen
+      Navigator.pushNamedAndRemoveUntil(context, '/today', (route) => false);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -40,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'NiceOS',
@@ -56,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -68,15 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _loading ? null : _signIn,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Sign In'),
+              _loading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: _signIn,
+                      child: const Text('Sign In'),
+                    ),
+              const SizedBox(height: 16),
+              const Text(
+                'OTP will be sent to your email after sign in',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),

@@ -7,10 +7,18 @@ class Retailer {
   final double longitude;
   final String? businessType;
   final String? businessSize;
+  final String tier;
   final String status;
-  final String territoryId;
-  final int targetVisitFrequencyDays;
-  final DateTime? lastVisitAt;
+  final String ward;
+  final String constituency;
+  final String zone;
+  final String address;
+  final double competitorPresence; // 0-100
+  final String? shelfNote;
+  final String? createdBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
 
   Retailer({
     required this.id,
@@ -21,10 +29,18 @@ class Retailer {
     required this.longitude,
     this.businessType,
     this.businessSize,
+    required this.tier,
     required this.status,
-    required this.territoryId,
-    this.targetVisitFrequencyDays = 7,
-    this.lastVisitAt,
+    required this.ward,
+    required this.constituency,
+    required this.zone,
+    required this.address,
+    this.competitorPresence = 0,
+    this.shelfNote,
+    this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
   });
 
   factory Retailer.fromJson(Map<String, dynamic> json) {
@@ -33,15 +49,29 @@ class Retailer {
       name: json['name'] as String,
       ownerName: json['owner_name'] as String?,
       phone: json['phone'] as String?,
-      latitude: (json['location']['coordinates'][1] as num).toDouble(),
-      longitude: (json['location']['coordinates'][0] as num).toDouble(),
+      latitude: (json['lat'] as num).toDouble(),
+      longitude: (json['lng'] as num).toDouble(),
       businessType: json['business_type'] as String?,
       businessSize: json['business_size'] as String?,
-      status: json['status'] as String,
-      territoryId: json['territory_id'] as String,
-      targetVisitFrequencyDays: json['target_visit_frequency_days'] as int? ?? 7,
-      lastVisitAt: json['last_visit_at'] != null
-          ? DateTime.parse(json['last_visit_at'] as String)
+      tier: json['tier'] as String?,
+      status: json['status'] as String?,
+      ward: json['ward'] as String?,
+      constituency: json['constituency'] as String?,
+      zone: json['zone'] as String?,
+      address: json['address'] as String?,
+      competitorPresence: json['competitor_presence'] != null
+          ? (json['competitor_presence'] as num).toDouble()
+          : 0,
+      shelfNote: json['shelf_note'] as String?,
+      createdBy: json['created_by'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
           : null,
     );
   }
@@ -52,16 +82,22 @@ class Retailer {
       'name': name,
       'owner_name': ownerName,
       'phone': phone,
-      'location': {
-        'type': 'Point',
-        'coordinates': [longitude, latitude],
-      },
+      'lat': latitude,
+      'lng': longitude,
       'business_type': businessType,
       'business_size': businessSize,
+      'tier': tier,
       'status': status,
-      'territory_id': territoryId,
-      'target_visit_frequency_days': targetVisitFrequencyDays,
-      'last_visit_at': lastVisitAt?.toIso8601String(),
+      'ward': ward,
+      'constituency': constituency,
+      'zone': zone,
+      'address': address,
+      'competitor_presence': competitorPresence,
+      'shelf_note': shelfNote,
+      'created_by': createdBy,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 }
