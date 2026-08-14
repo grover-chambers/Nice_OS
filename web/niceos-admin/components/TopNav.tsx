@@ -4,12 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Search } from "lucide-react";
 import { useRole } from "@/lib/role-context";
-import { getAlertCounts } from "@/lib/data";
 
-export default function TopNav() {
+export default function TopNav({ alertCount = 0 }: { alertCount?: number }) {
   const pathname = usePathname();
   const { config } = useRole();
-  const alertCount = getAlertCounts().unread;
 
   const pageTitle = config.nav.find((n) => {
     if (n.href === "/dashboard") return pathname === "/dashboard";

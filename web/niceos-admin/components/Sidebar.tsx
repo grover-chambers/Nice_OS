@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Users, Map, ShoppingBag, Route as RouteIcon, ClipboardCheck, BarChart3, FileText, Bell, Settings, Grid3x3, LogOut, ListChecks } from "lucide-react";
 import { useRole } from "@/lib/role-context";
-import { ROLE_CONFIG } from "@/lib/data";
-import { getAlertCounts } from "@/lib/data";
+import { ROLE_CONFIG } from "@/lib/data/mock";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/data/types";
 
@@ -40,11 +39,10 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export default function Sidebar() {
+export default function Sidebar({ alertCount = 0 }: { alertCount?: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const { role, setRole, config } = useRole();
-  const alertCount = getAlertCounts().unread;
 
   const handleLogout = () => {
     try {

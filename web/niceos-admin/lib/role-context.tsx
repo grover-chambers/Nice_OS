@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { ROLE_CONFIG } from "@/lib/data";
+import { ROLE_CONFIG } from "@/lib/data/mock";
 import type { Role } from "@/lib/data/types";
 
 type RoleContextValue = {
