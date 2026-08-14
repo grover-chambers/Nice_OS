@@ -3,11 +3,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/outlet_model.dart';
 import '../services/census_service.dart';
+import 'shift_provider.dart';
 
 /// Holds the live [CensusDraft] for the census flow and the list of outlets
 /// already captured on this device (offline-first, persisted in Hive).
 class CensusProvider extends ChangeNotifier {
-  CensusProvider();
+  CensusProvider({ShiftProvider? shift}) : _shift = shift;
+
+  final ShiftProvider? _shift;
 
   static const _boxName = 'census_outlets';
 
@@ -53,6 +56,7 @@ class CensusProvider extends ChangeNotifier {
     _captured.add(result.outlet);
     await _box.put(result.outlet.id, result.outlet.toJson());
     _draft = CensusDraft();
+    _shift?.touch();
     notifyListeners();
     return result.outlet;
   }

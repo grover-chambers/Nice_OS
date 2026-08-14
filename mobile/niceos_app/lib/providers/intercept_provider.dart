@@ -4,11 +4,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/consumer_intercept_model.dart';
 import '../services/intercept_service.dart';
 import '../services/sequence_lock.dart';
+import 'shift_provider.dart';
 
 /// Tracks captured consumer intercepts on this device and submits new ones
 /// through [InterceptService] with the sequence lock enforced.
 class InterceptProvider extends ChangeNotifier {
-  InterceptProvider();
+  InterceptProvider({ShiftProvider? shift}) : _shift = shift;
+
+  final ShiftProvider? _shift;
 
   static const _boxName = 'intercepts_local';
 
@@ -49,6 +52,7 @@ class InterceptProvider extends ChangeNotifier {
         await interceptService.submitIntercept(draft: draft, lock: lock, repId: repId);
     _captured.add(intercept);
     await _box.put(intercept.id, intercept.toJson());
+    _shift?.touch();
     notifyListeners();
     return intercept;
   }

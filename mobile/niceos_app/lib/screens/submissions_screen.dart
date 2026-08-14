@@ -7,10 +7,12 @@ import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/submission_provider.dart';
+import '../theme/brand.dart';
+import '../widgets/warm.dart';
 
-/// DAILY CLOSE — §5. Supervisors review every submission the same evening.
-/// The tab shows today's counts, the close action, previous submissions and
-/// back-checks due.
+/// Submissions — daily close (§5). Groups the day's work into one batch the
+/// supervisor approves or flags, raising quality flags (straightlining, speed,
+/// photo gaps) and recording back-checks.
 class SubmissionsScreen extends StatefulWidget {
   const SubmissionsScreen({super.key});
 
@@ -24,30 +26,27 @@ class _SubmissionsScreenState extends State<SubmissionsScreen> {
   Future<void> _closeDay() async {
     setState(() => _closing = true);
     final census = context.read<CensusProvider>();
+    final intercepts = context.read<InterceptProvider>();
     final submissions = context.read<SubmissionProvider>();
     final repId = context.read<AuthProvider>().currentUser?.id ?? 'demo-rep';
 
-    final rows = census.capturedOutlets
-        .map((o) => o.toJson())
-        .toList();
+    final rows = census.capturedOutlets.map((o) => o.toJson()).toList();
 
     try {
       final sub = await submissions.closeDay(
         repId: repId,
         outletCount: census.todayCount,
-        interceptCount: context.read<InterceptProvider>().todayCount,
+        interceptCount: intercepts.todayCount,
         outletRows: rows,
       );
       if (!mounted) return;
       final flagMsg = sub.qualityFlags.isEmpty
           ? 'Day closed — no flags raised'
           : 'Day closed — ${sub.qualityFlags.length} flag(s) for review';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(flagMsg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(flagMsg)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Close failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Close failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _closing = false);
@@ -59,101 +58,66 @@ class _SubmissionsScreenState extends State<SubmissionsScreen> {
     final census = context.watch<CensusProvider>();
     final intercepts = context.watch<InterceptProvider>();
     final submissions = context.watch<SubmissionProvider>();
+    final hasWork = census.todayCount > 0 || intercepts.todayCount > 0;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Submissions & Quality')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Today',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _Stat(label: 'Outlets', value: '${census.todayCount}'),
-                      _Stat(label: 'Intercepts', value: '${intercepts.todayCount}'),
-                      _Stat(
-                        label: 'Pending sync',
-                        value: '${submissions.backChecks.length}',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: _closing
-                        ? const Center(child: CircularProgressIndicator())
-                        : FilledButton.icon(
-                            onPressed: census.todayCount == 0 &&
-                                    intercepts.todayCount == 0
-                                ? null
-                                : _closeDay,
-                            icon: const Icon(Icons.check),
-                            label: const Text('Close Day & Submit'),
-                          ),
-                  ),
-                ],
-              ),
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 40),
+      children: [
+        const AppHeader(eyebrow: 'Daily close · §5', title: 'Submissions'),
+        // Today's batch summary
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: WarmCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    KpiTile('${census.todayCount}', 'Outlets'),
+                    const SizedBox(width: 10),
+                    KpiTile('${intercepts.todayCount}', 'Intercepts'),
+                    const SizedBox(width: 10),
+                    KpiTile('${submissions.backChecks.length}', 'Back-checks'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                AmberButton(
+                  _closing ? 'Closing…' : 'Close day & submit',
+                  onPressed: hasWork && !_closing ? _closeDay : null,
+                  loading: _closing,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Supervisor reviews your batch the same evening.',
+                  style: TextStyle(color: Brand.inkSoft, fontSize: 12),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Text('Submissions',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          if (submissions.submissions.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No submissions yet', style: TextStyle(color: Colors.grey)),
-            )
-          else
-            for (final s in submissions.submissions) _SubmissionTile(submission: s),
-          const SizedBox(height: 24),
-          const Text('Back-checks',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          if (submissions.backChecks.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No back-checks recorded', style: TextStyle(color: Colors.grey)),
-            )
-          else
-            for (final b in submissions.backChecks)
-              ListTile(
-                dense: true,
-                leading: Icon(
-                  b.status == 'passed' ? Icons.verified : Icons.warning_amber,
-                  color: b.status == 'passed' ? Colors.green : Colors.orange,
-                ),
-                title: Text('Back-check · ${b.status}'),
-                subtitle: Text(b.discrepancy ?? 'No discrepancy noted'),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  final String label;
-  final String value;
-  const _Stat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        ],
-      ),
+        ),
+        SectionTitle('Submissions', trailing: '${submissions.submissions.length}'),
+        if (submissions.submissions.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('No submissions yet.', style: TextStyle(color: Brand.inkSoft, fontSize: 13)),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(children: [for (final s in submissions.submissions) _SubmissionTile(submission: s)]),
+          ),
+        SectionTitle('Back-checks', trailing: '${submissions.backChecks.length}'),
+        if (submissions.backChecks.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('No back-checks recorded.', style: TextStyle(color: Brand.inkSoft, fontSize: 13)),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(children: [for (final b in submissions.backChecks) _BackCheckRow(b)]),
+          ),
+      ],
     );
   }
 }
@@ -165,29 +129,65 @@ class _SubmissionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = DateFormat('dd MMM yyyy');
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: const Icon(Icons.fact_check),
-        title: Text(
-          '${d.format(DateTime.parse(submission.submissionDate))} · '
-          '${submission.outletCount} outlets · '
-          '${submission.interceptCount} intercepts',
-        ),
-        subtitle: Text(
-          submission.qualityFlags.isEmpty
-              ? 'No flags'
-              : submission.qualityFlags.map((f) => '• $f').join('\n'),
-          style: TextStyle(
-            color: submission.qualityFlags.isEmpty ? Colors.green : Colors.orange,
-            fontSize: 12,
+    final status = submission.status.toLowerCase();
+    final st = status.contains('draft') || status.contains('reject')
+        ? StampStatus.skipped
+        : StampStatus.visited;
+    return WarmCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${d.format(DateTime.parse(submission.submissionDate))} · '
+                  '${submission.outletCount} outlets · ${submission.interceptCount} intercepts',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  submission.qualityFlags.isEmpty
+                      ? 'No flags'
+                      : submission.qualityFlags.map((f) => '• $f').join('\n'),
+                  style: TextStyle(
+                    color: submission.qualityFlags.isEmpty ? Brand.stampGreen : Brand.amberDeep,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        isThreeLine: submission.qualityFlags.isNotEmpty,
-        trailing: Chip(
-          label: Text(submission.status),
-          labelStyle: const TextStyle(fontSize: 12),
-        ),
+          const SizedBox(width: 8),
+          StampTag(st, label: submission.status),
+        ],
+      ),
+    );
+  }
+}
+
+class _BackCheckRow extends StatelessWidget {
+  final BackCheckModel b;
+  const _BackCheckRow(this.b);
+
+  @override
+  Widget build(BuildContext context) {
+    final passed = b.status == 'passed';
+    return WarmCard(
+      child: Row(
+        children: [
+          Icon(passed ? Icons.verified : Icons.warning_amber, color: passed ? Brand.stampGreen : Brand.amberDeep),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Back-check · ${b.status}', style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink)),
+                Text(b.discrepancy ?? 'No discrepancy noted', style: const TextStyle(color: Brand.inkSoft, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

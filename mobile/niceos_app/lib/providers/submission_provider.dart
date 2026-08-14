@@ -6,12 +6,15 @@ import '../domain/typology.dart';
 import '../models/daily_submission_model.dart';
 import '../services/quality_service.dart';
 import '../services/straightlining.dart';
+import 'shift_provider.dart';
 
 /// Daily close (§5): groups the day's work into one [DailySubmissionModel] a
 /// supervisor can approve or send back, raises [QualityFlag]s (straightlining
 /// from the day's records, speed flags, photo gaps) and records back-checks.
 class SubmissionProvider extends ChangeNotifier {
-  SubmissionProvider();
+  SubmissionProvider({ShiftProvider? shift}) : _shift = shift;
+
+  final ShiftProvider? _shift;
 
   static const _boxName = 'submissions_local';
 
@@ -86,6 +89,7 @@ class SubmissionProvider extends ChangeNotifier {
 
     await _box.put(submission.id, submission.toJson());
     _submissions.insert(0, submission);
+    _shift?.touch();
     notifyListeners();
     return submission;
   }

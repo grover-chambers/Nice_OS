@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../theme/brand.dart';
+import '../widgets/warm.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,7 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await context.read<AuthProvider>().signIn(email, password);
-      // RootScreen watches the auth state and swaps to the field home.
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -47,52 +48,96 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Brand.paper,
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'NiceOS',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Market Activation Platform',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
+                // Wordmark
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Brand.ink, width: 2.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Transform.rotate(
+                        angle: -0.1,
+                        child: const Text(
+                          'N',
+                          style: TextStyle(
+                            color: Brand.ink,
+                            fontFamily: Brand.fontMono,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 10),
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: 'Nice', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Brand.ink)),
+                          TextSpan(text: 'OS', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Brand.amberDeep)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+                const Eyebrow('Field rep sign in'),
+                const SizedBox(height: 6),
+                const Text(
+                  'Karibu back.',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Brand.ink, letterSpacing: -0.02),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Sign in with the email your route lead registered for you.',
+                  style: TextStyle(color: Brand.inkSoft, fontSize: 14.5, height: 1.5),
+                ),
+                const SizedBox(height: 28),
+                if (_error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBE9E7),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Brand.stampRed, width: 1),
+                    ),
+                    child: Text(_error!, style: const TextStyle(color: Brand.stampRed, fontSize: 13)),
                   ),
+                  const SizedBox(height: 16),
+                ],
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Email'),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   onSubmitted: (_) => _signIn(),
+                  decoration: const InputDecoration(labelText: 'Password'),
                 ),
-                const SizedBox(height: 24),
-                _loading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _signIn,
-                        child: const Text('Sign In'),
-                      ),
+                const SizedBox(height: 22),
+                AmberButton(_loading ? 'Signing in…' : 'Sign in', onPressed: _signIn, loading: _loading),
+                const SizedBox(height: 18),
+                const Text(
+                  'Trouble signing in? Contact your route lead.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Brand.inkSoft, fontSize: 13),
+                ),
               ],
             ),
           ),

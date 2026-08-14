@@ -36,3 +36,6 @@ mobile/niceos_app/niceos_app_fixed.zip
 
 # Docs
 docs/supabase-migrations/*.sql
+
+# Supabase CLI local state (linking, auth, project ref)
+supabase/.temp/

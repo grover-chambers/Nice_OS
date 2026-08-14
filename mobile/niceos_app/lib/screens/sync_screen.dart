@@ -1,0 +1,122 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/sync_provider.dart';
+import '../services/sync_service.dart';
+import '../theme/brand.dart';
+import '../widgets/warm.dart';
+
+class SyncScreen extends StatelessWidget {
+  const SyncScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final sync = context.watch<SyncProvider>();
+    final pending = sync.pendingCount;
+
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 40),
+          children: [
+            const AppHeader(eyebrow: 'Offline queue', title: 'Sync'),
+            // Sync hero card
+            Container(
+              margin: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Brand.ink,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: sync.isOnline ? Brand.stampGreen : Brand.stampRed,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          sync.isOnline ? '● Online' : '● Offline',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: Brand.fontMono,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.05,
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        'Queued locally until you sync',
+                        style: TextStyle(color: Brand.paper, fontSize: 11, fontFamily: Brand.fontMono),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$pending',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: Brand.fontMono,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Text(
+                    'items waiting to upload',
+                    style: TextStyle(color: Brand.paper, fontSize: 11.5),
+                  ),
+                  const SizedBox(height: 14),
+                  AmberButton(
+                    sync.isSyncing ? 'Syncing…' : 'Sync now',
+                    onPressed: () => context.read<SyncProvider>().forceSync(),
+                    loading: sync.isSyncing,
+                  ),
+                ],
+              ),
+            ),
+            const SectionTitle('Queued'),
+            if (pending == 0)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Queue is empty — everything is synced.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Brand.inkSoft, fontSize: 13),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    for (final item in syncService.pendingItems.take(50))
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: const BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Brand.lineStrong, width: 1)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text((item['entity'] as String? ?? 'item').toUpperCase(),
+                                style: const TextStyle(fontSize: 12.5, fontFamily: Brand.fontMono, fontWeight: FontWeight.w700)),
+                            Text((item['row_id'] as String? ?? '').substring(0, 8),
+                                style: const TextStyle(color: Brand.inkSoft, fontSize: 11.5, fontFamily: Brand.fontMono)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

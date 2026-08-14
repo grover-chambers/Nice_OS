@@ -118,7 +118,7 @@ BEGIN
 
   -- Central zone: 22 retailers (dense urban)
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'Central', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_central, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'Central', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_central, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000001','Star Stores','James Otieno','0711 401 001','duka','B','active','Nairobi Central','Starehe','Koinange St 12',-1.2833,36.8219,82,'low',now()-interval '2 days',4,3,5400,12,'20000000-0000-4000-8000-000000000001','[{"brand":"Unga Ltd","proximity":"same-street"}]',null),
     ('50000000-0000-4000-8000-000000000002','Alpha Mini-Mart','Fatuma Hassan','0711 401 002','supermarket','A','active','Pangani','Starehe','Jogoo Rd 44',-1.2790,36.8350,76,'low',now()-interval '1 day',6,5,9800,20,'20000000-0000-4000-8000-000000000001','[]',null),
@@ -147,7 +147,7 @@ BEGIN
 
   -- Northern zone: 20 retailers
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'Northern', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_northern, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'Northern', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_northern, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000030','Sunrise Shop','Eunice Wanjiru','0711 402 001','kiosk','C','active','Roysambu','Roysambu','Thika Rd 101',-1.2194,36.8670,71,'low',now()-interval '3 days',3,2,3200,5,'20000000-0000-4000-8000-000000000001','[]',null),
     ('50000000-0000-4000-8000-000000000031','City Wholesale','David Maina','0711 402 002','wholesaler','A','active','Kahawa','Roysambu','Kenyatta Ave 21',-1.1936,36.9180,88,'low',now()-interval '1 day',7,6,15400,30,'20000000-0000-4000-8000-000000000001','[{"brand":"Bidco Millers","proximity":"same-street"}]',null),
@@ -174,7 +174,7 @@ BEGIN
 
   -- Kiambu zone: 18 retailers
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'Kiambu', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_kiambu, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'Kiambu', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_kiambu, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000060','GoodLife Mart','George Wanyama','0711 403 001','supermarket','A','active','Kangemi','Westlands','Oginga Odinga St 33',-1.2681,36.8083,90,'low',now()-interval '1 day',8,7,12100,25,'20000000-0000-4000-8000-000000000014','[]',null),
     ('50000000-0000-4000-8000-000000000061','Family Kiosk','Mercy Chepkemoi','0711 403 002','kiosk','C','active','Kilimani','Westlands','Ngong Rd 9',-1.2870,36.7880,68,'low',now()-interval '4 days',2,1,2800,-8,'20000000-0000-4000-8000-000000000014','[]',null),
@@ -199,7 +199,7 @@ BEGIN
 
   -- Eastern zone: 18 retailers
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'Eastern', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_eastern, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'Eastern', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_eastern, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000080','Bright Mart','Ali Mohammed','0711 404 001','supermarket','A','active','Embakasi','Embakasi','Kimathi St 4',-1.3150,36.8990,79,'low',now()-interval '1 day',6,5,8900,15,'20000000-0000-4000-8000-000000000015','[]',null),
     ('50000000-0000-4000-8000-000000000081','Market Traders','Rose Akinyi','0711 404 002','duka','B','active','Kayole','Embakasi','Moi Ave 19',-1.2730,36.9050,64,'low',now()-interval '6 days',3,2,4100,-5,'20000000-0000-4000-8000-000000000015','[]',null),
@@ -224,7 +224,7 @@ BEGIN
 
   -- Kajiado zone: 16 retailers
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'Kajiado', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_kajiado, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'Kajiado', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_kajiado, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000100','Blessed General','Jane Muthoni','0711 405 001','duka','B','active','Kibera','Langata','Kenyatta Ave 8',-1.3150,36.7870,70,'low',now()-interval '2 days',4,3,3800,10,'20000000-0000-4000-8000-000000000016','[]',null),
     ('50000000-0000-4000-8000-000000000101','Royal Wholesale','Mohammed Yusuf','0711 405 002','wholesaler','A','active','Langata','Langata','Koinange St 3',-1.3490,36.7460,86,'low',now()-interval '1 day',6,5,13500,22,'20000000-0000-4000-8000-000000000016','[{"brand":"Bidco Millers","proximity":"same-street"}]',null),
@@ -247,7 +247,7 @@ BEGIN
 
   -- South-Eastern zone: 18 retailers
   INSERT INTO public.retailers (id, name, owner_name, phone, business_type, tier, status, ward, constituency, zone, address, lat, lng, health_score, churn_risk, last_visit_at, visits30d, orders30d, avg_order_value, order_trend_pct, rep_id, territory_id, created_by, competitor_presence, shelf_note)
-  SELECT v_id, v_name, v_owner, v_phone, v_type, v_tier, v_status, v_ward, v_const, 'South-Eastern', v_addr, v_lat, v_lng, v_hs, v_churn, v_last, v_vis, v_ord, v_avg, v_trend, v_rep, v_zone_se, v_manager_id, v_comp::jsonb, v_shelf
+  SELECT v.id::uuid, v.name, v.owner, v.phone, v.type::public.outlet_type, v.tier::public.retailer_tier, v.status::public.retailer_status, v.ward, v.const, 'South-Eastern', v.addr, v.lat::double precision, v.lng::double precision, v.hs::int, v.churn::public.churn_risk, v.last::timestamptz, v.vis::int, v.ord::int, v.avg::numeric, v.trend::int, v.rep::uuid, v_zone_se, v_manager_id, v.comp::jsonb, v.shelf
   FROM (VALUES
     ('50000000-0000-4000-8000-000000000120','Evergreen Store','Joseph Karanja','0711 406 001','duka','B','active','Imara Daima','Makadara','Tom Mboya St 6',-1.3030,36.8720,73,'low',now()-interval '2 days',4,3,3600,8,'20000000-0000-4000-8000-000000000017','[]',null),
     ('50000000-0000-4000-8000-000000000121','Central Depot','Teresa Nduta','0711 406 002','wholesaler','A','active','Pipeline','Makadara','Ngong Rd 14',-1.3210,36.8940,81,'low',now()-interval '1 day',7,6,12800,19,'20000000-0000-4000-8000-000000000017','[]',null),
@@ -309,7 +309,7 @@ BEGIN
       -- Pick 6-10 random retailers from this rep's zone
       SELECT array_agg(id) INTO v_retailer_ids
       FROM (
-        SELECT id FROM public.retails
+        SELECT id FROM public.retailers
         WHERE zone = v_rec.zone AND status != 'churned' AND rep_id = v_rec.id
         ORDER BY random()
         LIMIT 8
@@ -357,8 +357,8 @@ BEGIN
         VALUES (
           v_route_id, v_retailer_id, v_i,
           make_time(v_h, v_m, 0),
-          make_time(v_h, v_m + 26, 0),
-          CASE WHEN random() < 0.7 THEN 'retail' ELSE 'stock-check' END,
+          (make_time(v_h, v_m, 0) + interval '26 minutes')::time,
+          CASE WHEN random() < 0.7 THEN 'retail' ELSE 'stock-check' END::public.visit_type,
           round(v_km * 10) / 10, v_min,
           v_day <= 0,
           CASE WHEN v_day <= 0 THEN (current_date + v_day * interval '1 day' + make_interval(hours := v_h, mins := v_m))::timestamptz ELSE null END
@@ -382,17 +382,17 @@ BEGIN
                  CASE WHEN v_status = 'completed' THEN 5 + random() * 15 ELSE 50 + random() * 200 END,
                  v_status = 'completed',
                  CASE WHEN v_status = 'completed' THEN (5 + random() * 15)::int ELSE (50 + random() * 200)::int END,
-                 v_status,
+                 v_status::public.visit_status,
                  16 + (random() * 26)::int,
                  v_status = 'completed',
                  CASE WHEN v_status = 'completed' THEN (2 + random() * 4)::int ELSE 0 END,
                  v_status = 'completed' AND random() < 0.6,
                  CASE WHEN v_status = 'completed' AND random() < 0.6 THEN
-                   (SELECT sum(qty * default_price_kes) FROM unnest(ARRAY['NG-2','NG-5','WM-2']) sku
-                    JOIN public.sku_catalog sc ON sc.sku = sku
+                   (SELECT COALESCE(sum(sc.default_price_kes), 0) FROM unnest(ARRAY['NG-2','NG-5','WM-2']) AS u(sku)
+                    JOIN public.sku_catalog sc ON sc.sku = u.sku
                     WHERE random() < 0.6) * (1 + random() * 2)::int
                  ELSE null END,
-                 v_status,
+                 v_status::public.visit_status,
                  CASE WHEN v_status = 'no-stock' THEN 'No Nice stock — noted for replenishment.'
                       WHEN v_status = 'closed' THEN 'Outlet closed during visit window.'
                       ELSE null END
@@ -413,7 +413,7 @@ BEGIN
                             ELSE 0 END;
 
               INSERT INTO public.visit_items (visit_id, sku, name, qty, shelf, price)
-              VALUES (v_visit_id, v_sku, v_sku_name, v_qty, v_shelf, v_sku_price);
+              VALUES (v_visit_id, v_sku, v_sku_name, v_qty, v_shelf::public.shelf_level, v_sku_price);
             END LOOP;
           END IF;
 
@@ -426,7 +426,7 @@ BEGIN
               VALUES (v_visit_id, v_retailer_id, v_rec.id, v_sku, v_sku_name,
                       CASE WHEN random() < 0.4 THEN (10 + random() * 30)::int
                            WHEN random() < 0.7 THEN (1 + random() * 8)::int ELSE 0 END,
-                      CASE WHEN random() < 0.45 THEN 'full' WHEN random() < 0.8 THEN 'low' ELSE 'out' END,
+                      CASE WHEN random() < 0.45 THEN 'full' WHEN random() < 0.8 THEN 'low' ELSE 'out' END::public.shelf_level,
                       v_sku_price, v_at, v_rec.id);
             END LOOP;
           END IF;
@@ -438,8 +438,8 @@ BEGIN
 
             INSERT INTO public.order_intents (id, retailer_id, rep_id, created_by, total, forward_status, created_at)
             SELECT v_order_id, v_retailer_id, v_rec.id, v_rec.id,
-                   (SELECT sum(qty * default_price_kes) FROM unnest(ARRAY['NG-2','NG-5']) sku
-                    JOIN public.sku_catalog sc ON sc.sku = sku WHERE random() < 0.6) * (1 + random() * 3)::int,
+                   (SELECT COALESCE(sum(sc.default_price_kes), 0) FROM unnest(ARRAY['NG-2','NG-5']) AS u(sku)
+                    JOIN public.sku_catalog sc ON sc.sku = u.sku WHERE random() < 0.6) * (1 + random() * 3)::int,
                    (CASE WHEN random() < 0.4 THEN 'sent' WHEN random() < 0.6 THEN 'acknowledged'
                          WHEN random() < 0.8 THEN 'pending' ELSE 'failed' END)::public.order_forward_status,
                    v_at;
@@ -457,7 +457,7 @@ BEGIN
             INSERT INTO public.competitor_observations (retailer_id, rep_id, visit_id, brand, activity, note, at)
             SELECT v_retailer_id, v_rec.id, v_visit_id,
                    (ARRAY['Unga Ltd','Pembe Flour','Mombasa Maize Millers','Bidco Millers'])[1 + (random() * 3)::int],
-                   (ARRAY['price-drop','promo','new-listing','stockout','shelf-share'])[1 + (random() * 4)::int],
+                   (ARRAY['price-drop','promo','new-listing','stockout','shelf-share'])[1 + (random() * 4)::int]::public.competitor_activity,
                    (ARRAY['Running 2kg @ KES 185 promotion.','Competitor restocked shelf.','New display at counter.','Retailer reported lower demand.'])[1 + (random() * 3)::int],
                    v_at;
           END IF;
