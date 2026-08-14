@@ -82,18 +82,18 @@ class OrderIntentItemModel {
     required this.id,
     required this.orderIntentId,
     required this.sku,
-    this.name,
+    this.name = '',
     this.quantity = 1,
     this.price = 0,
     required this.createdAt,
-  );
+  });
 
   factory OrderIntentItemModel.fromJson(Map<String, dynamic> json) {
     return OrderIntentItemModel(
       id: json['id'] as String,
       orderIntentId: json['order_intent_id'] as String,
       sku: json['sku'] as String,
-      name: json['name'] as String?,
+      name: json['name'] as String? ?? '',
       quantity: json['quantity'] as int? ?? 1,
       price: json['price'] != null ? (json['price'] as num).toDouble() : 0,
       createdAt: json['created_at'] != null

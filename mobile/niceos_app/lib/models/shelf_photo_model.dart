@@ -21,8 +21,8 @@ class ShelfPhoto {
     required this.repId,
     required this.filePath,
     this.photoType = 'shop_front',
-    this.lat,
-    this.lng,
+    this.lat = '',
+    this.lng = '',
     this.accuracy,
     required this.capturedAt,
     required this.createdBy,
@@ -39,13 +39,13 @@ class ShelfPhoto {
       repId: json['rep_id'] as String,
       filePath: json['file_path'] as String,
       photoType: json['photo_type'] as String? ?? 'shop_front',
-      lat: json['lat'] as String?,
-      lng: json['lng'] as String?,
+      lat: json['lat'] as String? ?? '',
+      lng: json['lng'] as String? ?? '',
       accuracy: json['accuracy'] != null ? (json['accuracy'] as num).toDouble() : null,
       capturedAt: json['captured_at'] != null
           ? DateTime.parse(json['captured_at'] as String)
           : DateTime.now(),
-      createdBy: json['created_by'] as String?,
+      createdBy: json['created_by'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

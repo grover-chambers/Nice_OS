@@ -20,7 +20,7 @@ class StockObservationModel {
     required this.retailerId,
     required this.repId,
     required this.sku,
-    this.name,
+    this.name = '',
     this.qty = 0,
     this.shelf = 'full',
     this.price = 0,
@@ -29,7 +29,7 @@ class StockObservationModel {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
-  );
+  });
 
   factory StockObservationModel.fromJson(Map<String, dynamic> json) {
     return StockObservationModel(
@@ -38,14 +38,14 @@ class StockObservationModel {
       retailerId: json['retailer_id'] as String,
       repId: json['rep_id'] as String,
       sku: json['sku'] as String,
-      name: json['name'] as String?,
+      name: json['name'] as String? ?? '',
       qty: json['qty'] as int? ?? 0,
       shelf: json['shelf'] as String? ?? 'full',
       price: json['price'] != null ? (json['price'] as num).toDouble() : 0,
       capturedAt: json['captured_at'] != null
           ? DateTime.parse(json['captured_at'] as String)
           : DateTime.now(),
-      createdBy: json['created_by'] as String?,
+      createdBy: json['created_by'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

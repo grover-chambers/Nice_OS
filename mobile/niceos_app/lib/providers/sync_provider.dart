@@ -1,44 +1,79 @@
-import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
 
 class SyncProvider extends ChangeNotifier {
-  SyncProvider() {
-    _initConnectivityListener();
-  }
-
-  final SyncService _syncService = SyncService();
-
-  /// Called when the widget is added to the tree.
-  void _initConnectivityListener() {
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      // When online, attempt to flush the sync queue
-      if (result != ConnectivityResult.none) {
-        _flushSyncQueue();
+  SyncProvider({bool demoMode = false}) : _demoMode = demoMode {
+    Connectivity().onConnectivityChanged.listen((results) {
+      final online = results != ConnectivityResult.none;
+      _online = online;
+      if (online && !_demoMode) {
+        flush();
+      } else {
+        notifyListeners();
       }
     });
   }
 
-  /// Flush the sync queue by calling the sync-push edge function.
-  Future<void> _flushSyncQueue() async {
-    // In a full implementation, this would call the sync-push function
-    // with the pending items from the Hive box.
-    // For now, we just notify listeners.
-    notifyListeners();
-  }
+  final bool _demoMode;
+  final SupabaseService _supabase = SupabaseService.instance;
+  final _uuid = const Uuid();
 
-  /// Get the count of pending (unsynced) items.
+  bool _online = true;
+  bool _syncing = false;
+  String _deviceId = '';
+
+  bool get isOnline => _online;
+  bool get isSyncing => _syncing;
   int get pendingCount => syncService.pendingCount;
 
-  /// Whether the device is currently online.
-  bool get isOnline => SyncService.instance.pendingSyncBox.isNotEmpty;
-
-  /// Force a manual sync trigger.
-  Future<void> forceSync() async {
-    await _flushSyncQueue();
-    notifyListeners();
+  Future<String> _getDeviceId() async {
+    if (_deviceId.isNotEmpty) return _deviceId;
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString('device_id');
+    if (id == null) {
+      id = _uuid.v4();
+      await prefs.setString('device_id', id);
+    }
+    _deviceId = id;
+    return id;
   }
+
+  Future<void> flush() async {
+    if (_syncing) return;
+    if (!_online) return;
+    _syncing = true;
+    notifyListeners();
+    try {
+      if (_demoMode) {
+        // Demo mode keeps everything in the local queue; a supervisor could
+        // export the pending rows without a live backend.
+        await Future.delayed(const Duration(milliseconds: 100));
+        return;
+      }
+      final deviceId = await _getDeviceId();
+      await syncService.flush(onPush: (entity, rows) async {
+        final res = await _supabase.pushSync(deviceId: deviceId, batch: [
+          {'entity': entity, 'rows': rows},
+        ]);
+        if (res is Map && res['error'] != null) {
+          return {'error': res['error']};
+        }
+        return res is Map ? Map<String, dynamic>.from(res) : {'applied': 0};
+      });
+      await syncService.purgeSynced();
+    } catch (_) {
+      // Network or auth failure — entries stay queued for the next flush.
+    } finally {
+      _syncing = false;
+      notifyListeners();
+    }
+  }
+  Future<void> forceSync() => flush();
 }
 
-/// Global sync provider instance.
 final SyncProvider syncProvider = SyncProvider();

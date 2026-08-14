@@ -14,6 +14,14 @@ const ENTITIES = [
   "health_scores",
   "stock_observations",
   "shelf_photos",
+  "outlets",
+  "outlet_contacts",
+  "outlet_client_links",
+  "consent_records",
+  "category_observations",
+  "consumer_intercepts",
+  "daily_submissions",
+  "back_checks",
 ];
 
 // Parent entities keyed by the column that links children to them.
@@ -21,6 +29,9 @@ const PARENT_ENTITY = {
   route_stops: "route_id",
   visit_items: "visit_id",
   order_intent_items: "order_intent_id",
+  outlet_contacts: "outlet_id",
+  outlet_client_links: "outlet_id",
+  category_observations: "outlet_id",
 } as const;
 
 type ParentKey = keyof typeof PARENT_ENTITY;
@@ -31,10 +42,10 @@ interface Row {
   [key: string]: unknown;
 }
 
-// A row is owned by the caller when it names the caller as rep_id or
-// created_by. Parent entities enforce this directly; child entities must
-// reference a parent that is owned (in the DB already OR present in this same
-// batch as a brand-new offline row).
+// A row is owned by the caller when it names the caller as rep_id,
+// created_by or enumerator_id. Parent entities enforce this directly; child
+// entities must reference a parent that is owned (in the DB already OR present
+// in this same batch as a brand-new offline row).
 function isOwnedRow(
   row: Row,
   ctx: SyncContext,
@@ -43,7 +54,13 @@ function isOwnedRow(
   const repId = ctx.rep.id;
   const profileId = ctx.profile.id;
 
-  if (row.rep_id === repId || row.created_by === profileId) return true;
+  if (
+    row.rep_id === repId ||
+    row.created_by === profileId ||
+    row.enumerator_id === repId
+  ) {
+    return true;
+  }
 
   for (const parentCol of Object.values(PARENT_ENTITY)) {
     if (typeof row[parentCol] === "string") {
@@ -84,6 +101,7 @@ serve(async (req) => {
     route_id: new Set(),
     visit_id: new Set(),
     order_intent_id: new Set(),
+    outlet_id: new Set(),
   };
   for (const group of body.batch) {
     const entity = group?.entity;
@@ -96,19 +114,27 @@ serve(async (req) => {
     if (entity === "order_intents" && Array.isArray(group.rows)) {
       for (const r of group.rows) if (typeof r.id === "string") ownedParents.order_intent_id.add(r.id);
     }
+    if (entity === "outlets" && Array.isArray(group.rows)) {
+      for (const r of group.rows) if (typeof r.id === "string") ownedParents.outlet_id.add(r.id);
+    }
   }
   {
-    const [routes, visits, orders] = await Promise.all([
+    const [routes, visits, orders, outlets] = await Promise.all([
       ctx.db.from("routes").select("id").eq("rep_id", ctx.rep.id),
       ctx.db.from("visits").select("id").eq("rep_id", ctx.rep.id),
       ctx.db
         .from("order_intents")
         .select("id")
         .or(`rep_id.eq.${ctx.rep.id},created_by.eq.${ctx.profile.id}`),
+      ctx.db
+        .from("outlets")
+        .select("id")
+        .or(`created_by.eq.${ctx.profile.id}`),
     ]);
     for (const r of routes.data ?? []) ownedParents.route_id.add(r.id);
     for (const v of visits.data ?? []) ownedParents.visit_id.add(v.id);
     for (const o of orders.data ?? []) ownedParents.order_intent_id.add(o.id);
+    for (const o of outlets.data ?? []) ownedParents.outlet_id.add(o.id);
   }
 
   const applied: Record<string, number> = {};

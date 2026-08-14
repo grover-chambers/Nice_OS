@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/retailer_provider.dart';
 import '../widgets/retailer_list.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -23,13 +22,13 @@ class DashboardScreen extends StatelessWidget {
         children: [
           _buildKpiCard('Coverage', '84%', '7 of 12 territories active'),
           _buildKpiCard('Today\'s Visits', '14', '8 completed, 6 pending'),
-          Expanded(
+          const Expanded(
             child: RetailerList(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {/* navigate to visit capture */},
+        onPressed: () => Navigator.pushNamed(context, '/check-in'),
         child: const Icon(Icons.add),
       ),
     );

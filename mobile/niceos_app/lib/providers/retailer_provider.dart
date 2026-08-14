@@ -1,64 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/retailer_model.dart';
+
 class RetailerProvider extends ChangeNotifier {
-  final SupabaseClient _client = Supabase.instance.client;
-  final _retailers = <Retailer>[].obs;
+  RetailerProvider({bool demoMode = false}) : _demoMode = demoMode;
+
+  final bool _demoMode;
+  SupabaseClient? _client;
+  List<Retailer> _retailers = [];
   Retailer? _currentRetailer;
 
-  List<Retailer> get retailers => _retailers;
+  List<Retailer> get retailers => List.unmodifiable(_retailers);
   Retailer? get currentRetailer => _currentRetailer;
 
-  RetailerProvider() {
-    _loadRetailers();
+  set currentRetailer(Retailer? retailer) {
+    _currentRetailer = retailer;
+    notifyListeners();
   }
 
-  Future<void> _loadRetailers() async {
-    try {
-      final response = await _client.from('retailers').select();
-      _retailers.clear();
-      for (final r in response) {
-        _retailers.add(Retailer.fromJson(r));
-      }
+  Retailer? byId(String id) {
+    for (final r in _retailers) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
+  Future<void> loadRetailers() async {
+    if (_demoMode) {
+      // Demo mode has no assignment feed — the census captures its own outlets.
       notifyListeners();
-    } catch (e) {
-      // Handle error silently or show in UI
+      return;
+    }
+    try {
+      final client = _client ??= Supabase.instance.client;
+      final response = await client.from('retailers').select();
+      _retailers = (response as List)
+          .map((r) => Retailer.fromJson(Map<String, dynamic>.from(r as Map)))
+          .toList();
+      notifyListeners();
+    } catch (_) {
+      // RLS scopes retailers to the signed-in rep; ignore empty/denied reads.
     }
   }
 
   Future<void> addRetailer(Retailer retailer) async {
-    try {
-      final json = retailer.toJson();
-      final response = await _client.from('retailers').insert(json);
-      final newRetailer = Retailer.fromJson(response.first);
-      _retailers.add(newRetailer);
+    if (_demoMode) {
+      _retailers.add(retailer);
       notifyListeners();
-    } catch (e) {
-      // Handle error
+      return;
     }
+    try {
+      final client = _client ??= Supabase.instance.client;
+      await client.from('retailers').insert(retailer.toJson());
+      _retailers.add(retailer);
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> updateRetailer(Retailer retailer) async {
-    try {
-      final json = retailer.toJson();
-      await _client.from('retailers').update(json).match(id: retailer.id);
-      final index =
-          _retailers.indexWhere((r) => r.id == retailer.id);
+    if (_demoMode) {
+      final index = _retailers.indexWhere((r) => r.id == retailer.id);
       if (index != -1) {
         _retailers[index] = retailer;
         notifyListeners();
       }
-    } catch (e) {
-      // Handle error
+      return;
     }
+    try {
+      final client = _client ??= Supabase.instance.client;
+      await client.from('retailers').update(retailer.toJson()).eq('id', retailer.id);
+      final index = _retailers.indexWhere((r) => r.id == retailer.id);
+      if (index != -1) {
+        _retailers[index] = retailer;
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 
   Future<void> deleteRetailer(String id) async {
-    await _client.from('retailers').delete().match(id: id);
-    _retailers.removeWhere((r) => r.id == id);
-    notifyListeners();
+    if (_demoMode) {
+      _retailers.removeWhere((r) => r.id == id);
+      notifyListeners();
+      return;
+    }
+    try {
+      final client = _client ??= Supabase.instance.client;
+      await client.from('retailers').delete().eq('id', id);
+      _retailers.removeWhere((r) => r.id == id);
+      notifyListeners();
+    } catch (_) {}
   }
 }
-
-/// Global retailer provider instance.
-final RetailerProvider retailerProvider = RetailerProvider();

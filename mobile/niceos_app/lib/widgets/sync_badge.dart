@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../providers/sync_provider.dart';
 
 class SyncBadge extends StatelessWidget {
@@ -7,20 +9,27 @@ class SyncBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sync = context.watch<SyncProvider>();
-    return PopupMenuButton<int>(
-      icon: const Icon(Icons.cloud_download),
-      onSelected: (value) {
-        // Handle sync menu selection
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: 1,
-          child: Text('Force Sync'),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: Icon(sync.isSyncing ? Icons.cloud_sync : Icons.cloud_done),
+          onPressed: () => context.read<SyncProvider>().forceSync(),
+          tooltip: 'Sync now',
         ),
-        PopupMenuItem(
-          value: 2,
-          child: Text('View History'),
-        ),
+        if (sync.pendingCount > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+              child: Text(
+                '${sync.pendingCount}',
+                style: const TextStyle(color: Colors.white, fontSize: 10),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -61,25 +70,6 @@ class GPSSLockIndicator extends StatelessWidget {
         isLocked ? 'GPS Locked' : 'Searching...',
         style: const TextStyle(color: Colors.white, fontSize: 12),
       ),
-    );
-  }
-}
-
-class RetailerList extends StatelessWidget {
-  const RetailerList({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: const Icon(Icons.store),
-          title: const Text('Wanjiru Kiosk'),
-          subtitle: const Text('Tier A, duka'),
-          trailing: const Icon(Icons.arrow_right_alt),
-        );
-      },
     );
   }
 }

@@ -32,6 +32,7 @@ mobile/niceos_app/build/
 mobile/niceos_app/ios/
 mobile/niceos_app/.packages
 mobile/niceos_app/pubspec.lock
+mobile/niceos_app/niceos_app_fixed.zip
 
 # Docs
 docs/supabase-migrations/*.sql

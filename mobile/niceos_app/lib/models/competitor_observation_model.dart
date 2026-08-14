@@ -21,17 +21,17 @@ class CompetitorObservationModel {
     required this.repId,
     required this.visitId,
     required this.brand,
-    this.productName,
+    this.productName = '',
     this.price = 0,
     this.shelfPresence = 'none',
     required this.activity,
     this.promotionActive = false,
-    this.note,
+    this.note = '',
     required this.at,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
-  );
+  });
 
   factory CompetitorObservationModel.fromJson(Map<String, dynamic> json) {
     return CompetitorObservationModel(
@@ -40,12 +40,12 @@ class CompetitorObservationModel {
       repId: json['rep_id'] as String,
       visitId: json['visit_id'] as String,
       brand: json['brand'] as String,
-      productName: json['product_name'] as String?,
+      productName: json['product_name'] as String? ?? '',
       price: json['price'] != null ? (json['price'] as num).toDouble() : 0,
       shelfPresence: json['shelf_presence'] as String? ?? 'none',
-      activity: json['activity'] as String?,
+      activity: json['activity'] as String? ?? 'promo',
       promotionActive: json['promotion_active'] as bool? ?? false,
-      note: json['note'] as String?,
+      note: json['note'] as String? ?? '',
       at: json['at'] != null ? DateTime.parse(json['at'] as String) : DateTime.now(),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)

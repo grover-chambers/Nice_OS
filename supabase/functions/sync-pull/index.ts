@@ -14,6 +14,14 @@ const ENTITIES = [
   "health_scores",
   "stock_observations",
   "shelf_photos",
+  "outlets",
+  "outlet_contacts",
+  "outlet_client_links",
+  "consent_records",
+  "category_observations",
+  "consumer_intercepts",
+  "daily_submissions",
+  "back_checks",
 ];
 
 const PAGE_LIMIT = 10000;
@@ -23,6 +31,7 @@ interface OwnedSets {
   routeIds: string[];
   visitIds: string[];
   orderIds: string[];
+  outletIds: string[];
 }
 
 // Preload the rep's owned parent ids so child entities can be scoped.
@@ -31,11 +40,12 @@ async function ownedSets(ctx: SyncContext): Promise<OwnedSets> {
   const profileId = ctx.profile.id;
   const and = (key: string) => `rep_id.eq.${repId},created_by.eq.${profileId}`;
 
-  const [retailers, routes, visits, orders] = await Promise.all([
+  const [retailers, routes, visits, orders, outlets] = await Promise.all([
     ctx.db.from("retailers").select("id").or(and("rep_id")),
     ctx.db.from("routes").select("id").eq("rep_id", repId),
     ctx.db.from("visits").select("id").eq("rep_id", repId),
     ctx.db.from("order_intents").select("id").or(and("rep_id")),
+    ctx.db.from("outlets").select("id").eq("created_by", profileId),
   ]);
 
   return {
@@ -43,6 +53,7 @@ async function ownedSets(ctx: SyncContext): Promise<OwnedSets> {
     routeIds: (routes.data ?? []).map((r: { id: string }) => r.id),
     visitIds: (visits.data ?? []).map((v: { id: string }) => v.id),
     orderIds: (orders.data ?? []).map((o: { id: string }) => o.id),
+    outletIds: (outlets.data ?? []).map((o: { id: string }) => o.id),
   };
 }
 
@@ -106,6 +117,23 @@ serve(async (req) => {
       case "order_intent_items":
         if (sets.orderIds.length) q = q.in("order_intent_id", sets.orderIds);
         else q = q.eq("order_intent_id", "00000000-0000-0000-0000-000000000000");
+        break;
+      case "outlets":
+        q = q.eq("created_by", profileId);
+        break;
+      case "outlet_contacts":
+      case "outlet_client_links":
+        if (sets.outletIds.length) q = q.in("outlet_id", sets.outletIds);
+        else q = q.eq("outlet_id", "00000000-0000-0000-0000-000000000000");
+        break;
+      case "consent_records":
+      case "consumer_intercepts":
+      case "daily_submissions":
+      case "back_checks":
+        q = q.eq("enumerator_id", repId);
+        break;
+      case "category_observations":
+        q = q.eq("rep_id", repId);
         break;
       case "health_scores":
         if (sets.retailerIds.length) {

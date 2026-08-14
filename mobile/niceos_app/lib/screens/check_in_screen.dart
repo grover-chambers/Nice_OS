@@ -1,7 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../providers/auth_provider.dart';
-import '../providers/sync_provider.dart';
+import 'package:provider/provider.dart';
+
+import '../models/retailer_model.dart';
+import '../models/visit_model.dart';
+import '../providers/retailer_provider.dart';
+import '../services/capture_service.dart';
 import '../services/location_service.dart';
 import '../services/photo_service.dart';
 
@@ -13,193 +19,301 @@ class CheckInScreen extends StatefulWidget {
 }
 
 class _CheckInScreenState extends State<CheckInScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _gpsFixCount = 0;
+  final _location = LocationService();
+  final _overrideController = TextEditingController();
+
+  Retailer? _retailer;
+  int _gpsFixCount = 0;
   double _gpsAccuracy = 0;
   double _distanceToOutlet = 0;
   bool _isLocked = false;
-  bool _isCheckingIn = false;
+  bool _checking = false;
+  String _status = 'Searching for GPS lock...';
 
   @override
   void initState() {
     super.initState();
-    _gpsFixCount = 0;
-    _checkGPSLock();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resolveRetailer());
+  }
+
+  void _resolveRetailer() {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final provider = context.read<RetailerProvider>();
+    final retailer = args is String ? provider.byId(args) : null;
+    setState(() {
+      _retailer = retailer ??
+          (provider.retailers.isNotEmpty ? provider.retailers.first : null);
+    });
+    if (_retailer != null) {
+      _checkGPSLock();
+    } else {
+      setState(() => _status = 'No outlet selected - assign outlets first');
+    }
   }
 
   Future<void> _checkGPSLock() async {
-    // Get current position
-    final position = await LocationService().getCurrentPosition();
+    if (!mounted || _isLocked) return;
+    final retailer = _retailer;
+    if (retailer == null) return;
+
+    Position? position;
+    try {
+      position = await _location.getCurrentPosition();
+    } catch (_) {
+      position = null;
+    }
+    if (!mounted) return;
     if (position == null) {
-      setState(() {
-        _gpsAccuracy = 0;
-      });
+      setState(() => _status = 'Could not acquire a GPS fix');
       return;
     }
 
-    final outletLat = 1.2345; // placeholder - would come from outlet data
-    final outletLng = 36.7890;
-    final distance = _calculateDistance(
-        position.latitude, position.longitude, outletLat, outletLng);
     final accuracy = position.accuracy;
+    final distance = _haversine(
+      position.latitude,
+      position.longitude,
+      retailer.latitude,
+      retailer.longitude,
+    );
+    _gpsFixCount++;
 
     setState(() {
       _gpsAccuracy = accuracy;
       _distanceToOutlet = distance;
+      _isLocked = accuracy <= 5 && distance <= 5 && _gpsFixCount >= 2;
+      _status = _isLocked
+          ? 'GPS locked - you can check in'
+          : 'GPS fix $_gpsFixCount: ${accuracy.toStringAsFixed(1)} m accuracy, '
+              '${distance.toStringAsFixed(1)} m from outlet';
     });
 
-    // GPS lock: 5m radius, 3 consecutive fixes with accuracy ≤5m
-    if (_gpsFixCount < 3) {
-      setState(() {
-        _gpsFixCount++;
-      });
-      // Check after 3 fixes
-      if (_gpsFixCount >= 3) {
-        setState(() => _isLocked = _gpsFix >= 3 && _gpsAccuracy <= 5);
-      }
-      // Retry after 2 seconds
+    if (_isLocked) return;
+    if (_gpsFixCount < 5) {
       Future.delayed(const Duration(seconds: 2), _checkGPSLock);
-    } else if (_isLocked && _gpsAccuracy <= 5) {
-      // Locked and accurate - proceed to photo capture
-      _proceedToPhotos();
+    } else {
+      setState(() => _status = 'GPS lock failed - use override to proceed');
     }
   }
 
-  double _calculateDistance(lat1, lng1, lat2, lng2) {
-    // Haversine formula
-    const R = 6371000;
-    final dLat = (lat2 - lat1) * 3.14159 / 180;
-    final dLng = (lng2 - lng1) * 3.14159 / 180;
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1 * 3.14159 / 180) * cos(lat2 * 3.14159 / 180) * sin(dLng / 2) * sin(dLng / 2);
-    final c = 2 * asin(sqrt(a));
-    return R * c;
+  Future<void> _checkIn() async {
+    final retailer = _retailer;
+    if (retailer == null) return;
+    setState(() => _checking = true);
+    try {
+      final position = await _location.getCurrentPosition();
+      final overrideReason = _overrideController.text.trim();
+      final useOverride = !_isLocked;
+      final fallback = Position(
+        latitude: retailer.latitude,
+        longitude: retailer.longitude,
+        accuracy: 999,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        timestamp: DateTime.now(),
+      );
+      final visit = await CaptureService.instance.checkIn(
+        retailer: retailer,
+        position: position ?? fallback,
+        accuracy: position?.accuracy,
+        radiusM: 5,
+        gpsVerified: useOverride ? false : _isLocked,
+        verificationMethod: useOverride ? 'override' : 'gps',
+        overrideReason:
+            useOverride ? (overrideReason.isEmpty ? 'GPS lock failed' : overrideReason) : null,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => PhotoCaptureScreen(visit: visit)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Check-in failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
   }
 
-  void _proceedToPhotos() {
-    setState(() => _isCheckingIn = true);
-    // Navigate to photo capture screen
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => const PhotoCaptureScreen(),
-    ));
+  double _haversine(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371000;
+    final dLat = (lat2 - lat1) * 3.14159 / 180;
+    final dLng = (lng2 - lng1) * 3.14159 / 180;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * 3.14159 / 180) *
+            math.cos(lat2 * 3.14159 / 180) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return r * 2 * math.asin(math.sqrt(a));
+  }
+
+  @override
+  void dispose() {
+    _overrideController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final retailer = _retailer;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Check In'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: const Text('Check In')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (retailer != null) ...[
+            Text(
+              retailer.name,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '${retailer.ward} - ${retailer.zone}',
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
+          const SizedBox(height: 24),
+          const Row(
             children: [
-              const Text(
-                'Check In',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              // GPS status
-              const Text(
-                'GPS Lock Status:',
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _isLocked ? 'Locked (5 m)' : 'Searching for GPS lock...',
-                style: TextStyle(
-                  color: _isLocked ? Colors.green : Colors.orange,
-                ),
-              ),
-              Text(
-                'Accuracy: _gpsAccuracy?.toStringAsFixed(1) ?? 'N/A' 'm',
-              ),
-              const SizedBox(height: 16),
-              // Distance to outlet
-              const Text(
-                'Distance to outlet:',
-              ),
-              Text(
-                _distanceToOutlet > 0
-                    ? '${_distanceToOutlet.toStringAsFixed(1)} m'
-                    : 'Within 5 m',
-                style: TextStyle(
-                  color: _distanceToOutlet <= 5 ? Colors.green : Colors.red,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Photo capture button (only show when locked)
-              _isLocked
-                  ? ElevatedButton.icon(
-                      onPressed: _proceedToPhotos,
-                      icon: const Icon(Icons.camera),
-                      label: const Text('Capture Photos'),
-                    )
-                  : const Text(
-                      'Get GPS lock within 5 m to proceed',
-                      style: TextStyle(color: Colors.orange),
-                    ),
-              const SizedBox(height: 24),
-              // Override reason (for when lock fails)
-              const Text(
-                'If you cannot achieve GPS lock, tap "Override" and provide a reason:',
-                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange),
-              ),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Override reason',
-                ),
-                onChanged: (value) {
-                  // Store override reason
-                },
-              ),
+              Icon(Icons.gps_fixed),
+              SizedBox(width: 8),
+              Text('GPS Lock', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(_status),
+          const SizedBox(height: 4),
+          Text(
+            'Accuracy: ${_gpsAccuracy == 0 ? 'N/A' : '${_gpsAccuracy.toStringAsFixed(1)} m'}',
+          ),
+          Text(
+            'Distance to outlet: '
+            '${_distanceToOutlet == 0 ? 'N/A' : '${_distanceToOutlet.toStringAsFixed(1)} m'}',
+            style: TextStyle(
+              color: _isLocked || _distanceToOutlet <= 5 ? Colors.green : Colors.red,
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (!_isLocked) ...[
+            const Text(
+              'Cannot get a lock? Enter a reason and check in with override.',
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange),
+            ),
+            TextField(
+              controller: _overrideController,
+              decoration: const InputDecoration(labelText: 'Override reason'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 16),
+          ],
+          _checking
+              ? const Center(child: CircularProgressIndicator())
+              : ElevatedButton.icon(
+                  onPressed: (_isLocked || _overrideController.text.trim().isNotEmpty)
+                      ? _checkIn
+                      : null,
+                  icon: const Icon(Icons.check),
+                  label: Text(_isLocked ? 'Check In' : 'Check In with override'),
+                ),
+        ],
       ),
     );
   }
 }
 
-class PhotoCaptureScreen extends StatelessWidget {
-  const PhotoCaptureScreen({super.key});
+class PhotoCaptureScreen extends StatefulWidget {
+  final Visit visit;
+  const PhotoCaptureScreen({super.key, required this.visit});
+
+  @override
+  State<PhotoCaptureScreen> createState() => _PhotoCaptureScreenState();
+}
+
+class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
+  int _photos = 0;
+  bool _capturing = false;
+
+  Future<void> _capture(String type) async {
+    setState(() => _capturing = true);
+    try {
+      final (path, geotag) = await PhotoService.captureWithGeotag();
+      await CaptureService.instance.capturePhoto(
+        visit: widget.visit,
+        filePath: path,
+        geotag: geotag,
+        photoType: type,
+      );
+      if (!mounted) return;
+      setState(() => _photos++);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${type.replaceAll('_', ' ')} photo queued')));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Photo capture failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _capturing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Capture Photos'),
-      ),
+      appBar: AppBar(title: const Text('Capture Photos')),
       body: Column(
         children: [
-          const Text(
-            'Take shop front photo',
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              '$_photos photo(s) queued. Capture a shop front and at least one '
+              'shelf photo for GPS+photo verification.',
+              textAlign: TextAlign.center,
+            ),
           ),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Capture photo with geotag
-              PhotoService.captureWithGeotag().then((filePathAndGeotag) {
-                // Navigate to next step
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => const NotesScreen(),
-                ));
-              });
-            },
-            icon: const Icon(Icons.photo),
-            label: const Text('Capture shop front'),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _capturing ? null : () => _capture('shop_front'),
+                    icon: const Icon(Icons.photo),
+                    label: const Text('Capture shop front'),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: _capturing ? null : () => _capture('shelf'),
+                    icon: const Icon(Icons.inventory),
+                    label: const Text('Capture shelf photo'),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Capture shelf photo
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const ShelfPhotoScreen(),
-              ));
-            },
-            icon: const Icon(Icons.inventory),
-            label: const Text('Capture shelf photos'),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _photos > 0
+                    ? () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NotesScreen(
+                              visit: widget.visit,
+                              photoCount: _photos,
+                            ),
+                          ),
+                        )
+                    : null,
+                child: const Text('Continue to Notes'),
+              ),
+            ),
           ),
         ],
       ),
@@ -207,65 +321,351 @@ class PhotoCaptureScreen extends StatelessWidget {
   }
 }
 
-class NotesScreen extends StatelessWidget {
-  const NotesScreen({super.key});
+class NotesScreen extends StatefulWidget {
+  final Visit visit;
+  final int photoCount;
+  const NotesScreen({super.key, required this.visit, this.photoCount = 0});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notes'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Add visit notes:'),
-            TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'e.g. Out of stock on Rice, customer busy',
-              ),
-              maxLines: 3,
+  State<NotesScreen> createState() => _NotesScreenState();
+}
+
+class _NotesScreenState extends State<NotesScreen> {
+  final _notesController = TextEditingController();
+  bool _saving = false;
+  bool _stockCaptured = false;
+  bool _orderPlaced = false;
+  double _orderValue = 0;
+
+  Future<void> _completeVisit() async {
+    setState(() => _saving = true);
+    await CaptureService.instance.checkOut(
+      widget.visit,
+      notes: _notesController.text.trim(),
+      stockCaptured: _stockCaptured,
+      orderPlaced: _orderPlaced,
+      orderValue: _orderPlaced ? _orderValue : null,
+      photoCount: widget.photoCount,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Visit saved - will sync when online')));
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  Future<void> _stockDialog() async {
+    final skuCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
+    final priceCtrl = TextEditingController(text: '0');
+    var shelf = 'full';
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Stock Observation'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: skuCtrl,
+                  decoration: const InputDecoration(labelText: 'SKU', hintText: 'NICE-RICE-5KG'),
+                ),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Product name'),
+                ),
+                TextField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: priceCtrl,
+                  decoration: const InputDecoration(labelText: 'Price (KES)'),
+                  keyboardType: TextInputType.number,
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: shelf,
+                  decoration: const InputDecoration(labelText: 'Shelf level'),
+                  items: const [
+                    DropdownMenuItem(value: 'full', child: Text('Full')),
+                    DropdownMenuItem(value: 'half', child: Text('Half')),
+                    DropdownMenuItem(value: 'low', child: Text('Low')),
+                    DropdownMenuItem(value: 'out', child: Text('Out of stock')),
+                  ],
+                  onChanged: (v) => setDialogState(() => shelf = v ?? 'full'),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
-              onPressed: () {
-                // Complete visit
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/today', (route) => false);
-              ),
-              child: const Text('Complete Visit'),
+              onPressed: () => Navigator.pop(ctx, {
+                'sku': skuCtrl.text.trim(),
+                'name': nameCtrl.text.trim(),
+                'qty': int.tryParse(qtyCtrl.text) ?? 0,
+                'shelf': shelf,
+                'price': double.tryParse(priceCtrl.text) ?? 0,
+              }),
+              child: const Text('Save'),
             ),
           ],
         ),
       ),
     );
-  }
-}
 
-class ShelfPhotoScreen extends StatelessWidget {
-  const ShelfPhotoScreen({super.key});
+    if (result != null) {
+      await CaptureService.instance.addStockObservation(
+        visit: widget.visit,
+        sku: result['sku'] as String,
+        name: result['name'] as String?,
+        qty: result['qty'] as int,
+        shelf: result['shelf'] as String,
+        price: result['price'] as double,
+      );
+      if (mounted) {
+        setState(() => _stockCaptured = true);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Stock observation queued')));
+      }
+    }
+  }
+
+  Future<void> _competitorDialog() async {
+    final brandCtrl = TextEditingController();
+    final productCtrl = TextEditingController();
+    final priceCtrl = TextEditingController(text: '0');
+    var shelfPresence = 'full_facing';
+    var activity = 'promo';
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Competitor Observation'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: brandCtrl,
+                  decoration: const InputDecoration(labelText: 'Brand', hintText: 'e.g. Pembe'),
+                ),
+                TextField(
+                  controller: productCtrl,
+                  decoration: const InputDecoration(labelText: 'Product name'),
+                ),
+                TextField(
+                  controller: priceCtrl,
+                  decoration: const InputDecoration(labelText: 'Price (KES)'),
+                  keyboardType: TextInputType.number,
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: shelfPresence,
+                  decoration: const InputDecoration(labelText: 'Shelf presence'),
+                  items: const [
+                    DropdownMenuItem(value: 'full_facing', child: Text('Full facing')),
+                    DropdownMenuItem(value: 'half_facing', child: Text('Half facing')),
+                    DropdownMenuItem(value: 'shelf_edge', child: Text('Shelf edge')),
+                    DropdownMenuItem(value: 'none', child: Text('None')),
+                  ],
+                  onChanged: (v) => setDialogState(() => shelfPresence = v ?? 'full_facing'),
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: activity,
+                  decoration: const InputDecoration(labelText: 'Activity'),
+                  items: const [
+                    DropdownMenuItem(value: 'promo', child: Text('Promo')),
+                    DropdownMenuItem(value: 'price-drop', child: Text('Price drop')),
+                    DropdownMenuItem(value: 'new-listing', child: Text('New listing')),
+                    DropdownMenuItem(value: 'stockout', child: Text('Stockout')),
+                    DropdownMenuItem(value: 'shelf-share', child: Text('Shelf share')),
+                  ],
+                  onChanged: (v) => setDialogState(() => activity = v ?? 'promo'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, {
+                'brand': brandCtrl.text.trim(),
+                'product_name': productCtrl.text.trim(),
+                'price': double.tryParse(priceCtrl.text) ?? 0,
+                'shelf_presence': shelfPresence,
+                'activity': activity,
+              }),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      await CaptureService.instance.addCompetitorObservation(
+        visit: widget.visit,
+        brand: result['brand'] as String,
+        productName: result['product_name'] as String?,
+        price: result['price'] as double,
+        shelfPresence: result['shelf_presence'] as String,
+        activity: result['activity'] as String,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Competitor observation queued')));
+      }
+    }
+  }
+
+  Future<void> _orderDialog() async {
+    final skuCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
+    final priceCtrl = TextEditingController(text: '0');
+    final items = <Map<String, dynamic>>[];
+
+    final result = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Order Intent'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: skuCtrl,
+                  decoration: const InputDecoration(labelText: 'SKU', hintText: 'NICE-RICE-5KG'),
+                ),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Product name'),
+                ),
+                TextField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: priceCtrl,
+                  decoration: const InputDecoration(labelText: 'Unit price (KES)'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      items.add({
+                        'sku': skuCtrl.text.trim(),
+                        'name': nameCtrl.text.trim(),
+                        'quantity': int.tryParse(qtyCtrl.text) ?? 1,
+                        'price': double.tryParse(priceCtrl.text) ?? 0,
+                      });
+                      skuCtrl.clear();
+                      nameCtrl.clear();
+                      qtyCtrl.text = '1';
+                      priceCtrl.text = '0';
+                    });
+                  },
+                  child: const Text('+ Add item'),
+                ),
+                if (items.isNotEmpty)
+                  Text('${items.length} item(s) added', style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: items.isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, List<Map<String, dynamic>>.from(items)),
+              child: const Text('Place Order'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      await CaptureService.instance.placeOrder(visit: widget.visit, items: result);
+      if (mounted) {
+        setState(() {
+          _orderPlaced = true;
+          _orderValue = result.fold<double>(
+            0,
+            (sum, it) => sum +
+                ((it['price'] as num).toDouble() * (it['quantity'] as num).toDouble()),
+          );
+        });
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Order queued - will be forwarded')));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Shelf Photos'),
-      ),
-      body: Column(
-        children: const [
-          Text('Capture shelf photos (minimum 1 required)'),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Capture shelf photo
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const NotesScreen(),
-              ));
-            },
-            icon: Icon(Icons.inventory),
-            label: Text('Capture shelf photo'),
+      appBar: AppBar(title: const Text('Visit Notes')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Add visit notes:',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          TextField(
+            controller: _notesController,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Out of stock on Rice, customer busy',
+            ),
+            maxLines: 3,
+          ),
+          const SizedBox(height: 24),
+          const Text('Capture intel:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _stockDialog,
+                icon: const Icon(Icons.inventory),
+                label: Text(_stockCaptured ? 'Stock saved' : 'Add stock'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _competitorDialog,
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('Competitor'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _orderDialog,
+                icon: const Icon(Icons.shopping_cart),
+                label: Text(_orderPlaced ? 'Order placed' : 'Place order'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _saving
+              ? const Center(child: CircularProgressIndicator())
+              : ElevatedButton.icon(
+                  onPressed: _completeVisit,
+                  icon: const Icon(Icons.check),
+                  label: const Text('Complete Visit'),
+                ),
         ],
       ),
     );

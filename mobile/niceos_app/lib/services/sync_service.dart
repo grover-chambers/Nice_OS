@@ -1,45 +1,91 @@
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-/// Minimal v1 sync queue: stores pending outgoing payloads in a Hive box
-/// and flushes them when online.
+/// Offline-first v1 sync queue: stages outgoing payloads in a Hive box keyed
+/// by `entity:row-id` and flushes them to the server (via the `sync-push`
+/// edge function) when the device is online.
 class SyncService {
   SyncService._();
 
   static final SyncService instance = SyncService._();
 
-  late Box<Map<String, dynamic>> _pendingSyncBox;
+  /// Parent-before-child push order so `sync_apply` never hits a foreign-key
+  /// violation on a row that has not been applied yet. Hive returns box
+  /// values sorted by key, so the enqueue order is lost; [flush] re-orders by
+  /// this list. Unknown entities sort last, preserving their arrival order.
+  static const List<String> pushOrder = [
+    'consent_records',
+    'outlets',
+    'retailers',
+    'routes',
+    'route_stops',
+    'outlet_contacts',
+    'outlet_client_links',
+    'visits',
+    'visit_items',
+    'order_intents',
+    'order_intent_items',
+    'competitor_observations',
+    'health_scores',
+    'stock_observations',
+    'shelf_photos',
+    'category_observations',
+    'consumer_intercepts',
+    'daily_submissions',
+    'back_checks',
+  ];
 
-  Future init() async {
-    _pendingSyncBox = await Hive.openBox<Map<String, dynamic>>('pending_sync');
+  /// Order [entities] by [pushOrder]; unknown entities come last in their
+  /// given order.
+  static List<String> orderedEntities(Iterable<String> entities) {
+    final seen = <String>{};
+    final ordered = <String>[];
+    for (final e in pushOrder) {
+      if (seen.add(e) && entities.contains(e)) ordered.add(e);
+    }
+    for (final e in entities) {
+      if (seen.add(e)) ordered.add(e);
+    }
+    return ordered;
   }
+
+  late Box<Map<String, dynamic>> _pendingSyncBox;
+  bool _ready = false;
+
+  Future<void> init() async {
+    if (_ready) return;
+    _pendingSyncBox = await Hive.openBox<Map<String, dynamic>>('pending_sync');
+    _ready = true;
+  }
+
+  bool get isReady => _ready;
 
   Box<Map<String, dynamic>> get pendingSyncBox => _pendingSyncBox;
 
-  /// Enqueue a payload keyed by its local row id. If an entry with the same id
-  /// already exists, it is replaced (last-write-wins on the local queue).
-  Future<void> enqueueSync(String id, Map<String, dynamic> data) async {
-    final now = DateTime.now().toIso8601String();
-    await _pendingSyncBox.put(id, {
-      'id': id,
-      'payload': data,
+  /// Enqueue a row for [entity]. Last-write-wins on the local queue: an
+  /// entry with the same `[entity]:[rowId]` key is replaced.
+  Future<void> enqueueSync(String entity, String rowId, Map<String, dynamic> row) async {
+    await _pendingSyncBox.put('$entity:$rowId', {
+      'id': '$entity:$rowId',
+      'entity': entity,
+      'row_id': rowId,
+      'payload': row,
       'synced': false,
-      'created_at': now,
+      'created_at': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Mark the entry for [id] as synced. The entry is left in the box (so we
-  /// can inspect history) but [pendingItems] will exclude it.
+  /// Mark the entry for [id] as synced. The entry is kept in the box so the
+  /// history is inspectable, but [pendingItems] excludes it.
   Future<void> markSynced(String id) async {
     final existing = _pendingSyncBox.get(id);
     if (existing == null) return;
     await _pendingSyncBox.put(id, {...existing, 'synced': true});
   }
 
-  /// Remove all entries flagged as synced. Call after a successful flush round.
+  /// Remove all entries flagged as synced. Call after a successful flush.
   Future<void> purgeSynced() async {
-    final keys = _pendingSyncBox.keys.toList();
-    for (final k in keys) {
+    for (final k in _pendingSyncBox.keys.toList()) {
       final v = _pendingSyncBox.get(k);
       if (v != null && v['synced'] == true) {
         await _pendingSyncBox.delete(k);
@@ -47,46 +93,45 @@ class SyncService {
     }
   }
 
-  /// Get all entries that have not yet been synced.
-  List<Map<String, dynamic>> get pendingItems {
-    return _pendingSyncBox.values
-        .whereType<Map>()
-        .where((v) => v['synced'] != true)
-        .map((v) => Map<String, dynamic>.from(v))
-        .toList();
-  }
+  /// All entries that have not yet been synced.
+  List<Map<String, dynamic>> get pendingItems => _pendingSyncBox.values
+      .where((v) => v['synced'] != true)
+      .map((v) => Map<String, dynamic>.from(v))
+      .toList();
 
   int get pendingCount => pendingItems.length;
 
-  /// Flush all pending items to the server via sync-push.
-  /// Returns a map of entity -> applied count + conflicts.
+  Future<bool> get isOnline async {
+    final results = await Connectivity().checkConnectivity();
+    return results != ConnectivityResult.none;
+  }
+
+  /// Flush all pending items via the [onPush] callback (wired to the
+  /// `sync-push` edge function by the caller).
+  ///
+  /// Returns a map of `entity -> server response` plus a `flushed` count.
   Future<Map<String, dynamic>> flush({
-    required Function(String entity, List<dynamic> rows) onPush,
+    required Future<Map<String, dynamic>> Function(String entity, List<dynamic> rows) onPush,
   }) async {
-    final connectivity = await Connectivity.checkConnectivity();
-    if (connectivity == ConnectivityState.none) {
-      return {'error': 'no_connection', 'flushed': 0};
-    }
+    final online = await isOnline;
+    if (!online) return {'error': 'no_connection', 'flushed': 0};
 
     final pending = pendingItems;
     if (pending.isEmpty) return {'flushed': 0, 'applied': {}};
 
-    // Group by entity
     final Map<String, List<Map<String, dynamic>>> byEntity = {};
     for (final item in pending) {
       final entity = item['entity'] as String?;
-      if (entity == null) continue;
-      byEntity.putIfAbsent(entity, () => []).add(item['payload'] as Map<String, dynamic>);
+      final payload = item['payload'];
+      if (entity == null || payload is! Map<String, dynamic>) continue;
+      byEntity.putIfAbsent(entity, () => []).add(payload);
     }
 
     final results = <String, dynamic>{};
-    for (final entity in byEntity.keys) {
-      final rows = byEntity[entity]!;
-      final result = await onPush(entity, rows);
-      results[entity] = result;
+    for (final entity in orderedEntities(byEntity.keys)) {
+      results[entity] = await onPush(entity, byEntity[entity]!);
     }
 
-    // Mark all as synced after successful push
     for (final item in pending) {
       await markSynced(item['id'] as String);
     }
@@ -95,5 +140,4 @@ class SyncService {
   }
 }
 
-/// Global sync service instance.
-final SyncService syncService = SyncService();
+final SyncService syncService = SyncService.instance;

@@ -6,11 +6,11 @@ class RouteModel {
   final String status;
   final double totalKm;
   final int totalTravelMin;
-  final String startTime;
-  final String endTime;
+  final String? startTime;
+  final String? endTime;
   final String createdBy;
   final String revisedBy;
-  final String revisedReason;
+  final String? revisedReason;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -42,15 +42,15 @@ class RouteModel {
       date: json['date'] as String,
       repId: json['rep_id'] as String,
       zone: json['zone'] as String,
-      status: json['status'] as String?,
+      status: json['status'] as String? ?? 'draft',
       totalKm: json['total_km'] != null ? (json['total_km'] as num).toDouble() : 0,
       totalTravelMin: json['total_travel_min'] != null
           ? (json['total_travel_min'] as num).toInt()
-          : null,
+          : 0,
       startTime: json['start_time'] as String?,
       endTime: json['end_time'] as String?,
-      createdBy: json['created_by'] as String?,
-      revisedBy: json['revised_by'] as String?,
+      createdBy: json['created_by'] as String? ?? '',
+      revisedBy: json['revised_by'] as String? ?? '',
       revisedReason: json['revised_reason'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -94,8 +94,8 @@ class RouteStopModel {
   final String routeId;
   final String retailerId;
   final int position;
-  final String plannedStart;
-  final String plannedEnd;
+  final String? plannedStart;
+  final String? plannedEnd;
   final String visitType;
   final double kmFromPrev;
   final int minutesFromPrev;
@@ -122,7 +122,7 @@ class RouteStopModel {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
-  );
+  });
 
   factory RouteStopModel.fromJson(Map<String, dynamic> json) {
     return RouteStopModel(
@@ -138,7 +138,7 @@ class RouteStopModel {
           : 0,
       minutesFromPrev: json['minutes_from_prev'] != null
           ? (json['minutes_from_prev'] as num).toInt()
-          : null,
+          : 0,
       visited: json['visited'] as bool? ?? false,
       visitedAt: json['visited_at'] != null
           ? DateTime.parse(json['visited_at'] as String)
@@ -173,6 +173,6 @@ class RouteStopModel {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
-    );
+    };
   }
 }

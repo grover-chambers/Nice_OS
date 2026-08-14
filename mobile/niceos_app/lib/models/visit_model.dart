@@ -19,7 +19,7 @@ class Visit {
   final int photoCount;
   final bool orderPlaced;
   final double? orderValue;
-  final String notes;
+  final String? notes;
   final String verificationSource; // 'gps' | 'qr' | 'photo_front' | 'photo_shelf' | 'override'
   final String? overrideReason;
   final DateTime createdAt;
@@ -43,13 +43,12 @@ class Visit {
     this.verificationMethod = 'gps+photo',
     this.verificationSource = 'gps',
     this.outcome = 'completed',
-    this.durationMin,
+    this.durationMin = 0,
     this.stockCaptured = false,
     this.photoCount = 0,
     this.orderPlaced = false,
     this.orderValue,
     this.notes,
-    this.verificationSource = 'gps',
     this.overrideReason,
     required this.createdAt,
     required this.updatedAt,
@@ -60,7 +59,7 @@ class Visit {
     return Visit(
       id: json['id'] as String,
       outletId: json['outlet_id'] as String,
-      outletName: json['outlet_name'] as String?,
+      outletName: json['outlet_name'] as String? ?? '',
       retailerId: json['retailer_id'] as String,
       repId: json['rep_id'] as String,
       userId: json['user_id'] as String,
@@ -80,7 +79,7 @@ class Visit {
       outcome: json['outcome'] as String? ?? 'completed',
       durationMin: json['duration_min'] != null
           ? (json['duration_min'] as num).toInt()
-          : null,
+          : 0,
       stockCaptured: json['stock_captured'] as bool? ?? false,
       photoCount: json['photo_count'] as int? ?? 0,
       orderPlaced: json['order_placed'] as bool? ?? false,
@@ -88,7 +87,6 @@ class Visit {
           ? (json['order_value'] as num).toDouble()
           : null,
       notes: json['notes'] as String?,
-      verificationSource: json['verification_source'] as String? ?? 'gps',
       overrideReason: json['override_reason'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

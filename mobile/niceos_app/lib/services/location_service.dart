@@ -1,7 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
-  LocationService._();
+  LocationService();
 
   /// Request permission and return the current position.
   /// Returns null if permission is denied or location services are disabled.
@@ -10,11 +12,11 @@ class LocationService {
     LocationPermission permission;
 
     // Test if location services are enabled.
-    serviceEnabled = await Geolator.isLocationServiceEnabled();
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       // Location services are not enabled. Ask the user to enable them.
-      serviceEnabled = await Geolocator.requestService();
-      if (!serviceEnabled) return null;
+      await Geolocator.openLocationSettings();
+      return null;
     }
 
     // Test permission
@@ -39,9 +41,7 @@ class LocationService {
 
   /// Get the GPS accuracy in meters from the last position fix.
   Future<double?> getLastAccuracy() async {
-    final position = await Geolocator.getLastKnownPosition(
-      accuracy: LocationAccuracy.high,
-    );
+    final position = await Geolocator.getLastKnownPosition();
     return position?.accuracy;
   }
 
@@ -56,7 +56,7 @@ class LocationService {
 
     while (DateTime.now().difference(start).inSeconds < maxSeconds) {
       final fix = await Geolocator.getCurrentPosition(
-        accuracy: LocationAccuracy.high,
+        desiredAccuracy: LocationAccuracy.high,
       );
       fixes.add(fix);
       if (fixes.length >= minSamples) {
@@ -76,13 +76,13 @@ class LocationService {
     return null;
   }
 
-  double _haversineDistance(lat1, lng1, lat2, lng2) {
+  double _haversineDistance(double lat1, double lng1, double lat2, double lng2) {
     const R = 6371000; // Earth radius in metres
     final dLat = (lat2 - lat1) * 3.14159 / 180;
     final dLng = (lng2 - lng1) * 3.14159 / 180;
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1 * 3.14159 / 180) * cos(lat2 * 3.14159 / 180) * sin(dLng / 2) * sin(dLng / 2);
-    return 2 * R * asin(sqrt(a));
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * 3.14159 / 180) * math.cos(lat2 * 3.14159 / 180) * math.sin(dLng / 2) * math.sin(dLng / 2);
+    return 2 * R * math.asin(math.sqrt(a));
   }
 }
 

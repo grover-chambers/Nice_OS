@@ -53,12 +53,12 @@ class Retailer {
       longitude: (json['lng'] as num).toDouble(),
       businessType: json['business_type'] as String?,
       businessSize: json['business_size'] as String?,
-      tier: json['tier'] as String?,
-      status: json['status'] as String?,
-      ward: json['ward'] as String?,
-      constituency: json['constituency'] as String?,
-      zone: json['zone'] as String?,
-      address: json['address'] as String?,
+      tier: json['tier'] as String? ?? 'B',
+      status: json['status'] as String? ?? 'active',
+      ward: json['ward'] as String? ?? '',
+      constituency: json['constituency'] as String? ?? '',
+      zone: json['zone'] as String? ?? 'Central',
+      address: json['address'] as String? ?? '',
       competitorPresence: json['competitor_presence'] != null
           ? (json['competitor_presence'] as num).toDouble()
           : 0,
@@ -66,10 +66,10 @@ class Retailer {
       createdBy: json['created_by'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
-          : null,
+          : DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
-          : null,
+          : DateTime.now(),
       deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
