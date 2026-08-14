@@ -16,6 +16,7 @@ import 'screens/splash_screen.dart';
 import 'services/quality_service.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
+import 'services/update_service.dart';
 import 'theme/brand.dart';
 
 /// Rejects empty / obviously-placeholder Supabase values so the app never
@@ -60,6 +61,7 @@ Future<void> main() async {
       await Supabase.initialize(url: url, publishableKey: anonKey)
           .timeout(const Duration(seconds: 10));
       await SupabaseService.instance.init();
+      updateService.configure();
     } catch (_) {
       // Bad/unreachable Supabase config must never leave a blank screen:
       // fall back to offline mode so the app still boots.

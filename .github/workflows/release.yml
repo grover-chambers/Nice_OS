@@ -1,0 +1,97 @@
+name: Build & Release APK
+
+# Triggers on a version tag like v1.0.1. The tag's version is parsed from
+# pubspec.yaml by reading the "version:" line; the workflow builds the release
+# APK, signs it with the upload keystore, uploads it to the Supabase
+# app-releases bucket and records it in the app_versions table.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  KEYSTORE_PATH: ${{ runner.temp }}/upload-keystore.jks
+  KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+  KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+  KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        working-directory: mobile/niceos_app
+        run: flutter pub get
+
+      - name: Write Supabase config
+        working-directory: mobile/niceos_app
+        run: |
+          cat > .env <<EOF
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
+
+      - name: Restore upload keystore
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
+          ls -la "$KEYSTORE_PATH"
+
+      - name: Build release APK
+        working-directory: mobile/niceos_app
+        run: flutter build apk --release
+
+      - name: Parse version from pubspec
+        id: version
+        working-directory: mobile/niceos_app
+        run: |
+          version_line=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          # pubspec format: "1.0.1+3" -> name=1.0.1, code=3
+          version_name="${version_line%+*}"
+          version_code="${version_line##*+}"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "Detected v$version_name (code $version_code)"
+
+      - name: Upload APK to Supabase Storage
+        env:
+          APK: mobile/niceos_app/build/app/outputs/flutter-apk/app-release.apk
+          OBJ_NAME: niceos-${{ steps.version.outputs.version_name }}.apk
+        run: |
+          curl -f -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$APK" \
+            "$SUPABASE_URL/storage/v1/object/app-releases/$OBJ_NAME"
+
+      - name: Record release in app_versions
+        env:
+          APK_URL: ${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-releases/niceos-${{ steps.version.outputs.version_name }}.apk
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          NOTES: "Auto-published from tag ${{ github.ref_name }}."
+        run: |
+          curl -f -X POST \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"version_name\":\"$VERSION_NAME\",\"version_code\":$VERSION_CODE,\"apk_url\":\"$APK_URL\",\"notes\":\"$NOTES\",\"is_latest\":true}" \
+            "$SUPABASE_URL/rest/v1/app_versions"

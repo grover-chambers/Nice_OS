@@ -39,3 +39,7 @@ docs/supabase-migrations/*.sql
 
 # Supabase CLI local state (linking, auth, project ref)
 supabase/.temp/
+
+# CI signing keystore + release secrets
+.secrets/
+mobile/niceos_app/android/upload-keystore.jks

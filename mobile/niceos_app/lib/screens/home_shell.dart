@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/submission_provider.dart';
+import '../services/update_service.dart';
 import '../theme/brand.dart';
 import 'census_screen.dart';
 import 'dashboard_screen.dart';
@@ -35,6 +36,7 @@ class _HomeShellState extends State<HomeShell> {
       context.read<CensusProvider>().init();
       context.read<InterceptProvider>().init();
       context.read<SubmissionProvider>().init();
+      updateService.promptIfAvailable(context);
     });
   }
 
