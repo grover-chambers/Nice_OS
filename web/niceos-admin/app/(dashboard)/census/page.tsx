@@ -4,6 +4,7 @@ import { ClipboardList, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui";
 import CensusTracker from "@/components/census/CensusTracker";
+import { getCensusSummary } from "@/lib/data";
 
 const TerritoryMap = dynamic(() => import("@/components/TerritoryMap"), {
   ssr: false,
@@ -19,12 +20,13 @@ const TABS = [
   { id: "map", label: "Map", icon: Map },
 ] as const;
 
-export default function CensusPage({
+export default async function CensusPage({
   searchParams,
 }: {
   searchParams: { tab?: string };
 }) {
   const tab = searchParams.tab === "map" ? "map" : "tracker";
+  const census = await getCensusSummary();
 
   return (
     <div>
@@ -51,7 +53,7 @@ export default function CensusPage({
       </div>
 
       {tab === "tracker" ? (
-        <CensusTracker />
+        <CensusTracker data={census} />
       ) : (
         <div>
           <PageHeader

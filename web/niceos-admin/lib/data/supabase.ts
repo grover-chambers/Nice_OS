@@ -1159,6 +1159,158 @@ export async function getRetailersByZone(): Promise<
   });
 }
 
+// --- census (live capture data) ---------------------------------------------
+
+export type CensusWard = {
+  ward: string;
+  zone: WardZone;
+  outlets: number;
+  gpsCaptured: number;
+  intercepts: number;
+};
+
+export type CensusSummary = {
+  totalOutlets: number;
+  gpsCaptured: number;
+  newRegistered: number;
+  intercepts: number;
+  officers: number;
+  lastCaptureAt: string | null;
+  byZone: {
+    zone: WardZone;
+    outlets: number;
+    gpsCaptured: number;
+    intercepts: number;
+    officers: number;
+  }[];
+  byWard: CensusWard[];
+  daily: { date: string; outlets: number; intercepts: number }[];
+};
+
+const ZONE_BY_WARD = new Map<string, WardZone>();
+for (const f of TERRITORY_WARDS.features) {
+  const w = f.properties.ward as string;
+  const z = f.properties.zone as WardZone;
+  if (!ZONE_BY_WARD.has(w)) ZONE_BY_WARD.set(w, z);
+}
+
+function zoneFor(ward: string | null | undefined): WardZone {
+  if (!ward) return "Central";
+  const z = ZONE_BY_WARD.get(ward);
+  if (z && ZONES.includes(z)) return z;
+  // Ward not in the geo map — infer nothing, fall back to Central.
+  return "Central";
+}
+
+export async function getCensusSummary(): Promise<CensusSummary> {
+  const supabase = createServerSupabaseClient();
+
+  const [outlets, intercepts, reps, dailySubs] = await Promise.all([
+    supabase
+      .from("outlets")
+      .select("ward, gps_lat, gps_lng, created_at")
+      .is("deleted_at", null),
+    supabase
+      .from("consumer_intercepts")
+      .select("ward, captured_at")
+      .is("deleted_at", null),
+    supabase.from("reps").select("zone, status").eq("status", "active"),
+    supabase
+      .from("daily_submissions")
+      .select("submission_date, outlet_count, intercept_count")
+      .order("submission_date", { ascending: true }),
+  ]);
+
+  const outletRows = (outlets.data ?? []) as {
+    ward?: string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    created_at?: string | null;
+  }[];
+  const interceptRows = (intercepts.data ?? []) as {
+    ward?: string | null;
+    captured_at?: string | null;
+  }[];
+  const repRows = (reps.data ?? []) as { zone?: string | null }[];
+  const dailyRows = (dailySubs.data ?? []) as {
+    submission_date?: string;
+    outlet_count?: number | null;
+    intercept_count?: number | null;
+  }[];
+
+  const byZoneInit: CensusSummary["byZone"] = ZONES.map((zone) => ({
+    zone,
+    outlets: 0,
+    gpsCaptured: 0,
+    intercepts: 0,
+    officers: 0,
+  }));
+
+  const zoneMap = new Map(byZoneInit.map((z) => [z.zone, z]));
+  for (const r of repRows) {
+    const z = (r.zone ?? "Central") as WardZone;
+    if (zoneMap.has(z)) zoneMap.get(z)!.officers += 1;
+  }
+
+  const wardMap = new Map<string, CensusWard>();
+  let totalOutlets = 0;
+  let gpsCaptured = 0;
+  let lastCaptureAt: string | null = null;
+
+  for (const o of outletRows) {
+    const ward = o.ward ?? "";
+    const zone = zoneFor(ward);
+    const z = zoneMap.get(zone)!;
+    z.outlets += 1;
+    totalOutlets += 1;
+    if (o.gps_lat != null && o.gps_lng != null) {
+      z.gpsCaptured += 1;
+      gpsCaptured += 1;
+    }
+    const w = wardMap.get(ward) ?? { ward, zone, outlets: 0, gpsCaptured: 0, intercepts: 0 };
+    w.outlets += 1;
+    if (o.gps_lat != null && o.gps_lng != null) w.gpsCaptured += 1;
+    wardMap.set(ward, w);
+    if (o.created_at && (!lastCaptureAt || o.created_at > lastCaptureAt)) {
+      lastCaptureAt = o.created_at;
+    }
+  }
+
+  for (const i of interceptRows) {
+    const ward = i.ward ?? "";
+    const zone = zoneFor(ward);
+    zoneMap.get(zone)!.intercepts += 1;
+    const w = wardMap.get(ward) ?? { ward, zone, outlets: 0, gpsCaptured: 0, intercepts: 0 };
+    w.intercepts += 1;
+    wardMap.set(ward, w);
+    if (i.captured_at && (!lastCaptureAt || i.captured_at > lastCaptureAt)) {
+      lastCaptureAt = i.captured_at;
+    }
+  }
+
+  const byWard = Array.from(wardMap.values()).sort(
+    (a, b) => b.outlets - a.outlets || a.ward.localeCompare(b.ward)
+  );
+
+  const daily = dailyRows.map((d) => ({
+    date: d.submission_date ?? "",
+    outlets: d.outlet_count ?? 0,
+    intercepts: d.intercept_count ?? 0,
+  }));
+
+  return {
+    totalOutlets,
+    gpsCaptured,
+    newRegistered: totalOutlets,
+    intercepts: interceptRows.length,
+    officers: repRows.length,
+    lastCaptureAt,
+    byZone: byZoneInit,
+    byWard,
+    daily,
+  };
+}
+
 // --- role config ------------------------------------------------------------
 
 import type { RoleConfig } from "./mock";

@@ -253,3 +253,13 @@ export function getRetailersByZone(): Promise<
     ? live.getRetailersByZone()
     : Promise.resolve(mock.getRetailersByZone());
 }
+
+// Census (live capture data)
+export type CensusSummary = mock.CensusSummary;
+export type CensusWard = mock.CensusWard;
+
+export function getCensusSummary(): Promise<CensusSummary> | CensusSummary {
+  return supabaseConfigured
+    ? live.getCensusSummary()
+    : Promise.resolve(mock.getCensusSummary());
+}

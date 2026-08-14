@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,9 +8,15 @@ import 'package:uuid/uuid.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
 
+/// How often to attempt a background flush while the app is open and the
+/// device is online. Combined with the connectivity-triggered flush, this
+/// guarantees captures reach the server shortly after they are made without
+/// the user opening the sync screen.
+const Duration kAutoFlushInterval = Duration(seconds: 45);
+
 class SyncProvider extends ChangeNotifier {
   SyncProvider({bool demoMode = false}) : _demoMode = demoMode {
-    Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final online = results != ConnectivityResult.none;
       _online = online;
       if (online && !_demoMode) {
@@ -17,6 +25,22 @@ class SyncProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
+
+    _autoTimer = Timer.periodic(kAutoFlushInterval, (_) {
+      if (!_demoMode && _online && _syncing == false) {
+        flush();
+      }
+    });
+  }
+
+  Timer? _autoTimer;
+  StreamSubscription<ConnectivityResult>? _connectivitySub;
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    _connectivitySub?.cancel();
+    super.dispose();
   }
 
   final bool _demoMode;

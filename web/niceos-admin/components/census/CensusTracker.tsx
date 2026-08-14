@@ -5,150 +5,88 @@ import {
   ClipboardList,
   Target,
   Users,
-  CalendarDays,
   Route as RouteIcon,
   MapPin,
   FilePlus2,
-  XCircle,
   Navigation,
-  AlertTriangle,
+  MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge, PageHeader, Progress, StatCard, Th, Td, tableWrap, DemoBanner } from "@/components/ui";
+import { Badge, PageHeader, Progress, StatCard, Th, Td, tableWrap } from "@/components/ui";
 import { zoneColor } from "@/lib/status";
-import {
-  CENSUS_DAYS,
-  CENSUS_OFFICERS,
-  CENSUS_PACE_MIN,
-  CENSUS_PACE_MAX,
-  CENSUS_ROUTES,
-  CENSUS_TOTAL_SHOPS,
-} from "@/lib/data/census";
-import type { CensusRoute, CensusArea } from "@/lib/data/census";
+import type { CensusSummary, CensusWard } from "@/lib/data";
 
-// Demo progress state — deterministic per area so numbers stay stable.
-function hashStr(s: string) {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
+export default function CensusTracker({ data }: { data: CensusSummary }) {
+  const [zoneFilter, setZoneFilter] = useState<string>("all");
+  const [wardQuery, setWardQuery] = useState("");
 
-const DEMO_DAY = 12; // day 12 of 25 for the demo snapshot
+  const gpsPct = data.totalOutlets
+    ? Math.round((data.gpsCaptured / data.totalOutlets) * 100)
+    : 0;
 
-type AreaProgress = {
-  visited: number;
-  newRegistered: number;
-  closed: number;
-  gps: string;
-  issues: string[];
-};
+  const visibleZones =
+    zoneFilter === "all"
+      ? data.byZone
+      : data.byZone.filter((z) => z.zone === zoneFilter);
 
-function progressFor(area: CensusArea): AreaProgress {
-  const r = hashStr(area.name + area.zone) / 4294967295;
-  const progress = 0.22 + r * 0.62; // between 22% and 84% done
-  const visited = Math.round(area.shops * progress);
-  const newRegistered = Math.round(visited * (0.14 + r * 0.18));
-  const closed = Math.round(visited * (0.04 + r * 0.08));
-  const issues: string[] = [];
-  if (r > 0.72) issues.push("Locked out — revisit requested");
-  if (r > 0.88) issues.push("2 closed permanently");
-  return {
-    visited,
-    newRegistered,
-    closed,
-    gps: r > 0.5 ? "GPS captured" : "GPS pending",
-    issues,
-  };
-}
+  const visibleWards = useMemo(() => {
+    let wards = data.byWard;
+    if (zoneFilter !== "all") {
+      wards = wards.filter((w) => w.zone === zoneFilter);
+    }
+    const q = wardQuery.trim().toLowerCase();
+    if (q) wards = wards.filter((w) => w.ward.toLowerCase().includes(q));
+    return wards;
+  }, [data.byWard, zoneFilter, wardQuery]);
 
-const routeProgress = (route: CensusRoute) =>
-  route.areas.reduce(
-    (acc, a) => {
-      const p = progressFor(a);
-      acc.visited += p.visited;
-      acc.newRegistered += p.newRegistered;
-      acc.closed += p.closed;
-      acc.target += a.shops;
-      return acc;
-    },
-    { visited: 0, newRegistered: 0, closed: 0, target: 0 }
-  );
-
-const DEMO_TOTAL = CENSUS_ROUTES.reduce(
-  (acc, r) => {
-    const p = routeProgress(r);
-    acc.visited += p.visited;
-    acc.newRegistered += p.newRegistered;
-    acc.closed += p.closed;
-    acc.target += p.target;
-    return acc;
-  },
-  { visited: 0, newRegistered: 0, closed: 0, target: 0 }
-);
-
-const PACE_PER_OFFICER = Math.round(
-  DEMO_TOTAL.visited / Math.max(1, DEMO_DAY) / CENSUS_OFFICERS
-);
-
-export default function CensusTracker() {
-  const [routeFilter, setRouteFilter] = useState<number | "all">("all");
-  const [day, setDay] = useState(DEMO_DAY);
-
-  const dayFactor = day / DEMO_DAY;
-  const totalVisited = Math.round(DEMO_TOTAL.visited * dayFactor);
-  const totalRegistered = Math.round(DEMO_TOTAL.newRegistered * dayFactor);
-  const totalClosed = Math.round(DEMO_TOTAL.closed * dayFactor);
-  const dayTarget = CENSUS_OFFICERS * CENSUS_PACE_MIN;
-  const dayMax = CENSUS_OFFICERS * CENSUS_PACE_MAX;
-  const completionPct = (totalVisited / CENSUS_TOTAL_SHOPS) * 100;
-
-  const visibleRoutes = routeFilter === "all" ? CENSUS_ROUTES : CENSUS_ROUTES.filter((r) => r.id === routeFilter);
+  const lastSeen = data.lastCaptureAt
+    ? new Date(data.lastCaptureAt).toLocaleString("en-KE", {
+        day: "numeric",
+        month: "short",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "No captures yet";
 
   return (
     <div>
       <PageHeader
         title="Census Tracker"
-        description="Nairobi Metropolitan Shops Census — 25-day field drive · 8 officers · 4 groups × 2. Output template: Route | Area | Shops Visited | New Registered | Closed | GPS/Notes | Issues."
+        description="Live census capture from the field app — outlets, GPS coverage and consumer intercepts synced from reps in real time."
         actions={
           <Badge tone="emerald">
-            Day {day} of {CENSUS_DAYS}
+            {data.totalOutlets.toLocaleString()} outlets captured
           </Badge>
         }
       />
-      <DemoBanner />
 
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Shops visited"
-          value={totalVisited.toLocaleString()}
-          sub={`of ${CENSUS_TOTAL_SHOPS.toLocaleString()} target shops`}
+          label="Outlets captured"
+          value={data.totalOutlets.toLocaleString()}
+          sub={`${data.newRegistered.toLocaleString()} new registered`}
           icon={<ClipboardList size={16} />}
           tone="emerald"
-          href="/census?tab=map"
-        />
-        <StatCard
-          label="Completion"
-          value={`${completionPct.toFixed(0)}%`}
-          sub={`by day ${day} of ${CENSUS_DAYS}`}
-          icon={<Target size={16} />}
-          tone="blue"
-          href="/census?tab=map"
-        />
-        <StatCard
-          label="New registered"
-          value={`+${totalRegistered.toLocaleString()}`}
-          sub={`${totalClosed.toLocaleString()} closed / churned`}
-          icon={<FilePlus2 size={16} />}
-          tone="violet"
           href="/retailers"
         />
         <StatCard
-          label="Pace per officer"
-          value={`${PACE_PER_OFFICER}/day`}
-          sub={`target ${CENSUS_PACE_MIN}–${CENSUS_PACE_MAX} shops/person/day`}
+          label="GPS coverage"
+          value={`${gpsPct}%`}
+          sub={`${data.gpsCaptured.toLocaleString()} with coordinates`}
+          icon={<Navigation size={16} />}
+          tone="blue"
+        />
+        <StatCard
+          label="Consumer intercepts"
+          value={data.intercepts.toLocaleString()}
+          sub="anonymised survey responses"
+          icon={<MessagesSquare size={16} />}
+          tone="violet"
+        />
+        <StatCard
+          label="Field officers"
+          value={data.officers.toLocaleString()}
+          sub={`Last capture: ${lastSeen}`}
           icon={<Users size={16} />}
           tone="amber"
           href="/rep-management"
@@ -156,188 +94,140 @@ export default function CensusTracker() {
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-700">Overall progress</span>
-            <span className="text-slate-500">{completionPct.toFixed(0)}%</span>
-          </div>
-          <Progress value={completionPct} tone={completionPct >= 60 ? "emerald" : "amber"} />
-          <p className="mt-2 text-xs text-slate-500">
-            Target completion by day 25: {CENSUS_TOTAL_SHOPS.toLocaleString()} shops total.
-          </p>
-        </div>
-        {CENSUS_ROUTES.map((r) => {
-          const p = routeProgress(r);
-          const pct = (p.visited / Math.max(1, p.target)) * 100;
+        {data.byZone.map((z) => {
+          const pct = (z.outlets / Math.max(1, z.outlets + z.intercepts)) * 100;
           return (
             <button
-              key={r.id}
-              onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
+              key={z.zone}
+              onClick={() =>
+                setZoneFilter(zoneFilter === z.zone ? "all" : z.zone)
+              }
               className={cn(
                 "rounded-xl border bg-white p-4 text-left shadow-sm transition-colors",
-                routeFilter === r.id ? "border-emerald-600 ring-2 ring-emerald-100" : "border-slate-200 hover:border-slate-300"
+                zoneFilter === z.zone
+                  ? "border-emerald-600 ring-2 ring-emerald-100"
+                  : "border-slate-200 hover:border-slate-300"
               )}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <RouteIcon size={13} /> {r.name}
+                  <RouteIcon size={13} /> {z.zone}
                 </span>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: zoneColor(r.zone) }} />
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: zoneColor(z.zone) }}
+                />
               </div>
               <div className="mb-1.5 text-lg font-bold text-slate-900">
-                {p.visited.toLocaleString()}
-                <span className="text-xs font-medium text-slate-400"> / {p.target}</span>
+                {z.outlets.toLocaleString()}
+                <span className="text-xs font-medium text-slate-400">
+                  {" "}
+                  outlets
+                </span>
               </div>
-              <Progress value={pct} tone={pct >= 60 ? "emerald" : "amber"} />
+              <Progress value={pct} tone="emerald" />
               <p className="mt-1.5 text-[11px] text-slate-500">
-                {r.areas.length} areas · {r.officers} officers
+                {z.intercepts} intercepts · {z.officers} officers ·{" "}
+                {z.gpsCaptured} GPS
               </p>
             </button>
           );
         })}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-          Simulate day
-        </span>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
-          type="range"
-          min={1}
-          max={CENSUS_DAYS}
-          value={day}
-          onChange={(e) => setDay(Number(e.target.value))}
-          className="w-48 accent-emerald-700"
+          type="search"
+          placeholder="Filter by ward…"
+          value={wardQuery}
+          onChange={(e) => setWardQuery(e.target.value)}
+          className="w-64 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-emerald-500"
         />
-        <span className="text-xs font-semibold text-slate-700">{day}</span>
-        <div className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-500">
-          <AlertTriangle size={12} className="text-amber-600" />
-          Day target {dayTarget}–{dayMax} shops across {CENSUS_OFFICERS} officers
-        </div>
+        <span className="ml-auto text-xs text-slate-500">
+          {visibleWards.length} wards with capture data
+        </span>
       </div>
 
-      {visibleRoutes.map((r) => {
-        const p = routeProgress(r);
-        const pct = (p.visited / Math.max(1, p.target)) * 100;
+      {visibleZones.map((z) => {
+        const pct = (z.outlets / Math.max(1, z.outlets + z.intercepts)) * 100;
         return (
-          <div key={r.id} className="mb-5">
+          <div key={z.zone} className="mb-5">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                <RouteIcon size={15} style={{ color: zoneColor(r.zone) }} />
-                {r.name}
+                <RouteIcon size={15} style={{ color: zoneColor(z.zone) }} />
+                {z.zone}
               </h3>
-              <Badge tone="slate">{r.areas.length} areas</Badge>
-              <Badge tone="emerald">{pct.toFixed(0)}% visited</Badge>
+              <Badge tone="emerald">{z.outlets} outlets</Badge>
+              <Badge tone="violet">{z.intercepts} intercepts</Badge>
               <span className="ml-auto text-xs text-slate-500">
-                {p.visited.toLocaleString()} / {p.target.toLocaleString()} · +{p.newRegistered} new · {p.closed} closed
+                {Math.round(pct)}% capture share
               </span>
             </div>
             {tableWrap(
               <table className="w-full">
                 <thead className="bg-slate-50">
                   <tr>
-                    <Th>Area</Th>
-                    <Th>Target</Th>
-                    <Th>Visited</Th>
-                    <Th>New registered</Th>
-                    <Th>Closed</Th>
-                    <Th>GPS / Notes</Th>
-                    <Th>Issues</Th>
+                    <Th>Ward</Th>
+                    <Th>Outlets</Th>
+                    <Th>GPS captured</Th>
+                    <Th>Intercepts</Th>
+                    <Th>Zone</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {r.areas.map((a) => {
-                    const pr = progressFor(a);
-                    return (
-                      <tr key={a.name} className="hover:bg-slate-50/60">
+                  {visibleWards
+                    .filter((w) => w.zone === z.zone)
+                    .map((w) => (
+                      <tr key={w.ward} className="hover:bg-slate-50/60">
                         <Td>
                           <div className="flex items-center gap-1.5 font-medium text-slate-900">
-                            <MapPin size={13} style={{ color: zoneColor(a.zone) }} />
-                            {a.name}
+                            <MapPin
+                              size={13}
+                              style={{ color: zoneColor(w.zone) }}
+                            />
+                            {w.ward}
                           </div>
                         </Td>
-                        <Td>{a.shops}</Td>
                         <Td>
-                          <span className="font-semibold text-emerald-700">{pr.visited}</span>
-                          <span className="ml-1 text-xs text-slate-400">
-                            ({Math.round((pr.visited / a.shops) * 100)}%)
+                          <span className="font-semibold text-emerald-700">
+                            {w.outlets}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="inline-flex items-center gap-1 text-slate-600">
+                            <Navigation size={11} /> {w.gpsCaptured}
                           </span>
                         </Td>
                         <Td>
                           <span className="inline-flex items-center gap-1 text-violet-700">
-                            <FilePlus2 size={13} /> {pr.newRegistered}
+                            <MessagesSquare size={13} /> {w.intercepts}
                           </span>
                         </Td>
                         <Td>
-                          <span className="inline-flex items-center gap-1 text-slate-500">
-                            <XCircle size={13} /> {pr.closed}
+                          <span
+                            className="inline-flex items-center gap-1 text-xs"
+                            style={{ color: zoneColor(w.zone) }}
+                          >
+                            <FilePlus2 size={11} /> {w.zone}
                           </span>
-                        </Td>
-                        <Td className="text-xs text-slate-500">
-                          <span className="inline-flex items-center gap-1">
-                            <Navigation size={11} /> {pr.gps}
-                          </span>
-                        </Td>
-                        <Td className="text-xs">
-                          {pr.issues.length > 0 ? (
-                            <div className="space-y-1">
-                              {pr.issues.map((i, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700"
-                                >
-                                  <AlertTriangle size={11} /> {i}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
                         </Td>
                       </tr>
-                    );
-                  })}
+                    ))}
+                  {visibleWards.filter((w) => w.zone === z.zone).length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-4 text-center text-slate-400">
+                        No capture data for this zone yet.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             )}
           </div>
         );
       })}
-
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            <CalendarDays size={13} /> Timeline
-          </div>
-          <p className="mt-2 text-sm text-slate-700">
-            25 working days · day {day} snapshot
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            <Users size={13} /> Field team
-          </div>
-          <p className="mt-2 text-sm text-slate-700">
-            {CENSUS_OFFICERS} officers · 4 groups × 2
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            <Target size={13} /> Daily pace
-          </div>
-          <p className="mt-2 text-sm text-slate-700">
-            {CENSUS_PACE_MIN}–{CENSUS_PACE_MAX} shops / person / day
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            <RouteIcon size={13} /> Coverage
-          </div>
-          <p className="mt-2 text-sm text-slate-700">
-            {CENSUS_ROUTES.length} routes · Central, Northern, Eastern, Kajiado/Kiambu
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
+
+export type { CensusWard };

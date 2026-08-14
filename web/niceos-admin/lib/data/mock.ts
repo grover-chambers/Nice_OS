@@ -37,6 +37,84 @@ const competitorObservations = [...seed.competitorObservations];
 
 export { dateString, todayString } from "./seed";
 
+export type CensusWard = {
+  ward: string;
+  zone: WardZone;
+  outlets: number;
+  gpsCaptured: number;
+  intercepts: number;
+};
+
+export type CensusSummary = {
+  totalOutlets: number;
+  gpsCaptured: number;
+  newRegistered: number;
+  intercepts: number;
+  officers: number;
+  lastCaptureAt: string | null;
+  byZone: {
+    zone: WardZone;
+    outlets: number;
+    gpsCaptured: number;
+    intercepts: number;
+    officers: number;
+  }[];
+  byWard: CensusWard[];
+  daily: { date: string; outlets: number; intercepts: number }[];
+};
+
+export function getCensusSummary(): CensusSummary {
+  const wardMap = new Map<string, CensusWard>();
+  const zoneInit = ZONES.map((zone) => ({
+    zone,
+    outlets: 0,
+    gpsCaptured: 0,
+    intercepts: 0,
+    officers: 0,
+  }));
+  const zoneMap = new Map(zoneInit.map((z) => [z.zone, z]));
+
+  const repZoneCount = new Map<string, number>();
+  for (const r of reps) {
+    repZoneCount.set(r.zone, (repZoneCount.get(r.zone) ?? 0) + 1);
+    const z = zoneMap.get(r.zone as WardZone);
+    if (z) z.officers += 1;
+  }
+
+  for (const r of retailers) {
+    const zone = r.zone as WardZone;
+    const z = zoneMap.get(zone);
+    if (z) {
+      z.outlets += 1;
+      if (r.lat && r.lng) z.gpsCaptured += 1;
+    }
+    const w = wardMap.get(r.ward) ?? {
+      ward: r.ward,
+      zone,
+      outlets: 0,
+      gpsCaptured: 0,
+      intercepts: 0,
+    };
+    w.outlets += 1;
+    if (r.lat && r.lng) w.gpsCaptured += 1;
+    wardMap.set(r.ward, w);
+  }
+
+  return {
+    totalOutlets: retailers.length,
+    gpsCaptured: retailers.filter((r) => r.lat && r.lng).length,
+    newRegistered: retailers.length,
+    intercepts: 0,
+    officers: reps.length,
+    lastCaptureAt: null,
+    byZone: zoneInit,
+    byWard: Array.from(wardMap.values()).sort(
+      (a, b) => b.outlets - a.outlets || a.ward.localeCompare(b.ward)
+    ),
+    daily: [],
+  };
+}
+
 export const ZONES: WardZone[] = ["Kiambu", "Central", "Northern", "Eastern", "South-Eastern", "Kajiado"];
 
 // --- tiny utils -------------------------------------------------------------
