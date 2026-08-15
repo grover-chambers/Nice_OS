@@ -5,17 +5,34 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, Sparkles } from "lucide-react";
 import { Card, Badge, DemoBanner, EmptyState, Td, Th } from "@/components/ui";
-import { getRoutes, getReps, createDraftRoute, dateString, todayString, setRouteStatus, fmtNum } from "@/lib/data";
+import { dateString, todayString, fmtNum } from "@/lib/data/mock";
 import { routeStatusMeta } from "@/lib/status";
 import { toaster } from "@/components/toast";
-import type { RouteStatus } from "@/lib/data/types";
+import type { Route, Rep, RouteStatus } from "@/lib/data/types";
 
 type Scope = "all" | "today" | "tomorrow" | "past";
 
-export default function RoutePlanning() {
+async function api(path: string, body: unknown) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error ?? "Request failed");
+  return data;
+}
+
+export default function RoutePlanning({
+  routes: allRoutes,
+  reps,
+  today,
+}: {
+  routes: Route[];
+  reps: Rep[];
+  today: string;
+}) {
   const router = useRouter();
-  const allRoutes = useMemo(() => getRoutes(), []);
-  const reps = useMemo(() => getReps(), []);
 
   const [scope, setScope] = useState<Scope>("today");
   const [status, setStatus] = useState<RouteStatus | "all">("all");
@@ -23,9 +40,8 @@ export default function RoutePlanning() {
   const [regen, setRegen] = useState(0);
 
   const rows = useMemo(() => {
-    const today = todayString();
     const tomorrow = dateString(1);
-    let out = getRoutes();
+    let out = allRoutes;
     if (scope === "today") out = out.filter((r) => r.date === today);
     if (scope === "tomorrow") out = out.filter((r) => r.date === tomorrow);
     if (scope === "past") out = out.filter((r) => r.date < today);
@@ -33,10 +49,9 @@ export default function RoutePlanning() {
     if (repId !== "all") out = out.filter((r) => r.repId === repId);
     return out.sort((a, b) => b.date.localeCompare(a.date));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, status, repId, regen]);
+  }, [scope, status, repId, regen, allRoutes, today]);
 
   const repName = (id: string) => reps.find((r) => r.id === id)?.name ?? "—";
-  const today = todayString();
 
   const counts = useMemo(() => {
     const todayRoutes = allRoutes.filter((r) => r.date === today);
@@ -46,24 +61,32 @@ export default function RoutePlanning() {
       awaiting: allRoutes.filter((r) => r.status === "submitted").length,
       stops: todayRoutes.reduce((s, r) => s + r.stops.length, 0),
     };
-  }, [allRoutes]);
+  }, [allRoutes, today]);
 
-  const generate = () => {
+  const generate = async () => {
     const without = reps.filter(
       (r) => !allRoutes.some((rt) => rt.repId === r.id && rt.date === today)
     );
     const target = without[0] ?? reps[0];
     if (!target) return;
-    const id = createDraftRoute(target.id, today);
-    toaster.success(`Draft route created for ${target.name}`);
-    setRegen((n) => n + 1);
-    router.push(`/routes/${id}`);
+    try {
+      const data = await api("/api/routes/draft", { repId: target.id, date: today });
+      toaster.success(`Draft route created for ${target.name}`);
+      setRegen((n) => n + 1);
+      router.push(`/routes/${data.id}`);
+    } catch (e) {
+      toaster.error(e instanceof Error ? e.message : "Failed to create route");
+    }
   };
 
-  const approve = (id: string) => {
-    setRouteStatus(id, "approved");
-    setRegen((n) => n + 1);
-    toaster.success("Route approved");
+  const approve = async (id: string) => {
+    try {
+      await api("/api/routes/status", { id, status: "approved" });
+      setRegen((n) => n + 1);
+      toaster.success("Route approved");
+    } catch (e) {
+      toaster.error(e instanceof Error ? e.message : "Failed to approve route");
+    }
   };
 
   const summary = [

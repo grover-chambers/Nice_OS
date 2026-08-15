@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge, PageHeader, Progress, StatCard, Th, Td, tableWrap } from "@/components/ui";
 import { zoneColor } from "@/lib/status";
-import type { CensusSummary, CensusWard } from "@/lib/data";
+import type { CensusSummary, CensusWard } from "@/lib/data/mock";
 
 export default function CensusTracker({ data }: { data: CensusSummary }) {
   const [zoneFilter, setZoneFilter] = useState<string>("all");

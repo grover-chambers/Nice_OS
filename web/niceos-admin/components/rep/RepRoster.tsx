@@ -12,12 +12,12 @@ import {
 } from "recharts";
 import { Navigation, PhoneCall, Wifi, Clock } from "lucide-react";
 import { Card, Badge, PageHeader, DemoBanner, Progress, Segmented, Td, Th } from "@/components/ui";
-import { getRepManagement, fmtKes, fmtNum } from "@/lib/data";
+import { fmtKes, fmtNum } from "@/lib/data/mock";
 import { toaster } from "@/components/toast";
 import type { WardZone } from "@/lib/data/types";
+import type { RepManagementRow } from "@/lib/data/mock";
 
-export default function RepRoster() {
-  const rows = useMemo(() => getRepManagement(), []);
+export default function RepRoster({ rows }: { rows: RepManagementRow[] }) {
   const [zone, setZone] = useState<WardZone | "all">("all");
 
   const visible = rows.filter((r) => zone === "all" || r.rep.zone === zone);

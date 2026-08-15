@@ -1022,6 +1022,42 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   };
 }
 
+// --- zone coverage -----------------------------------------------------------
+
+export async function getZoneCoverage(): Promise<ZoneCoverage[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase.from("retailers").select("zone, ward, status");
+  if (error) {
+    console.error("getZoneCoverage:", error.message);
+    return [];
+  }
+
+  const wardCountByZone = new Map<string, number>();
+  for (const f of TERRITORY_WARDS.features) {
+    const z = f.properties.zone;
+    wardCountByZone.set(z, (wardCountByZone.get(z) ?? 0) + 1);
+  }
+
+  return ZONES.map((zone) => {
+    const zoneRetailers = (data ?? []).filter((r) => r.zone === zone);
+    const wardsCovered = new Set(
+      zoneRetailers.filter((r) => r.status !== "churned").map((r) => r.ward)
+    ).size;
+    const total = wardCountByZone.get(zone) ?? 0;
+    return {
+      zone,
+      wardsTotal: total,
+      wardsCovered,
+      retailers: zoneRetailers.length,
+      active: zoneRetailers.filter((r) => r.status === "active").length,
+      atRisk: zoneRetailers.filter(
+        (r) => r.status === "at-risk" || r.status === "churned"
+      ).length,
+      coveragePct: total ? Math.round((wardsCovered / total) * 100) : 0,
+    };
+  });
+}
+
 // --- ward coverage (map overlay) --------------------------------------------
 
 export type WardCoveragePoint = {
@@ -1069,8 +1105,8 @@ export type HierarchyNode = {
   children?: HierarchyNode[];
 };
 
-// Reuse the WARD_META from the mock module for hierarchy building
-import { WARD_META } from "./mock";
+// Reuse the WARD_META from the seed module for hierarchy building
+import { WARD_META } from "./seed";
 
 export async function getTerritoryHierarchy(): Promise<HierarchyNode[]> {
   const retailers = await getRetailers();

@@ -4,13 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Layers, MapPin, Plus, Search } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui";
-import { getTerritoryHierarchy } from "@/lib/data";
 import { zoneColor } from "@/lib/status";
 import { toaster } from "@/components/toast";
-import type { HierarchyNode } from "@/lib/data";
+import type { HierarchyNode } from "@/lib/data/mock";
 
-export default function TerritoryHierarchy() {
-  const tree = useMemo(() => getTerritoryHierarchy(), []);
+export default function TerritoryHierarchy({ tree }: { tree: HierarchyNode[] }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [q, setQ] = useState("");
 

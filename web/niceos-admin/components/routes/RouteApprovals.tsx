@@ -1,36 +1,58 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ArrowRight, RefreshCw, CalendarDays } from "lucide-react";
 import { Card, Badge, EmptyState, Td, Th } from "@/components/ui";
-import { getRoutes, getReps, setRouteStatus, todayString } from "@/lib/data";
 import { routeStatusMeta } from "@/lib/status";
 import { toaster } from "@/components/toast";
+import type { Route, Rep } from "@/lib/data/types";
 
-export default function RouteApprovals() {
-  const [regen, setRegen] = useState(0);
-  const today = todayString();
+async function api(path: string, body: unknown) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error ?? "Request failed");
+  return data;
+}
 
-  const queue = getRoutes()
+export default function RouteApprovals({
+  routes: allRoutes,
+  reps,
+  today,
+}: {
+  routes: Route[];
+  reps: Rep[];
+  today: string;
+}) {
+  const queue = allRoutes
     .filter((r) => r.status === "submitted" || r.status === "needs-revision")
     .sort((a, b) => (a.date === today ? -1 : 1) - (b.date === today ? -1 : 1));
 
-  const reps = getReps();
   const repName = (id: string) => reps.find((r) => r.id === id)?.name ?? "—";
 
-  const approve = (id: string) => {
-    setRouteStatus(id, "approved");
-    setRegen((n) => n + 1);
-    toaster.success("Route approved");
+  const approve = async (id: string) => {
+    try {
+      await api("/api/routes/status", { id, status: "approved" });
+      toaster.success("Route approved");
+      window.location.reload();
+    } catch (e) {
+      toaster.error(e instanceof Error ? e.message : "Failed to approve route");
+    }
   };
 
-  const reject = (id: string) => {
+  const reject = async (id: string) => {
     const reason = window.prompt("Reason for revision:");
     if (reason) {
-      setRouteStatus(id, "needs-revision", reason);
-      setRegen((n) => n + 1);
-      toaster.success("Revision requested");
+      try {
+        await api("/api/routes/status", { id, status: "needs-revision", reason });
+        toaster.success("Revision requested");
+        window.location.reload();
+      } catch (e) {
+        toaster.error(e instanceof Error ? e.message : "Failed to request revision");
+      }
     }
   };
 

@@ -1,11 +1,11 @@
-import dynamic from "next/dynamic";
+import NextDynamic from "next/dynamic";
 import Link from "next/link";
-import { getZoneCoverage, getRetailerCount, getRetailers } from "@/lib/data";
+import { getZoneCoverage, getRetailerCount, getRetailers, getTerritoryHierarchy } from "@/lib/data";
 import { PageHeader, DemoBanner, Progress } from "@/components/ui";
 import TerritoryTabs, { type TerritoryTab } from "@/components/territories/TerritoryTabs";
 import TerritoryHierarchy from "@/components/territories/TerritoryHierarchy";
 
-const TerritoryMap = dynamic(() => import("@/components/TerritoryMap"), {
+const TerritoryMap = NextDynamic(() => import("@/components/TerritoryMap"), {
   ssr: false,
   loading: () => (
     <div className="flex h-[75vh] min-h-[560px] items-center justify-center rounded-xl border border-slate-200 bg-white text-sm text-slate-500">
@@ -14,7 +14,9 @@ const TerritoryMap = dynamic(() => import("@/components/TerritoryMap"), {
   ),
 });
 
-export default function TerritoriesPage({
+export const dynamic = "force-dynamic";
+
+export default async function TerritoriesPage({
   searchParams,
 }: {
   searchParams: { tab?: string; zone?: string };
@@ -24,9 +26,12 @@ export default function TerritoriesPage({
       ? searchParams.tab
       : "overview";
 
-  const coverage = getZoneCoverage();
-  const totalRetailers = getRetailerCount();
-  const retailers = getRetailers();
+  const [coverage, totalRetailers, retailers, tree] = await Promise.all([
+    getZoneCoverage(),
+    getRetailerCount(),
+    getRetailers(),
+    getTerritoryHierarchy(),
+  ]);
 
   return (
     <div>
@@ -66,7 +71,7 @@ export default function TerritoriesPage({
 
       {tab === "map" && <TerritoryMap retailers={retailers} initialZone={searchParams.zone ?? null} />}
 
-      {tab === "hierarchy" && <TerritoryHierarchy />}
+      {tab === "hierarchy" && <TerritoryHierarchy tree={tree} />}
     </div>
   );
 }

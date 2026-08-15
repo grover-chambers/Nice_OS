@@ -12,11 +12,11 @@ import {
 } from "recharts";
 import { Award } from "lucide-react";
 import { Card, Badge, PageHeader, DemoBanner, Segmented, Td, Th, Progress, tableWrap } from "@/components/ui";
-import { getRepManagement, fmtKes, fmtNum } from "@/lib/data";
+import { fmtKes, fmtNum } from "@/lib/data/mock";
 import type { WardZone } from "@/lib/data/types";
+import type { RepManagementRow } from "@/lib/data/mock";
 
-export default function RepPerformance() {
-  const rows = useMemo(() => getRepManagement(), []);
+export default function RepPerformance({ rows }: { rows: RepManagementRow[] }) {
   const [zone, setZone] = useState<WardZone | "all">("all");
 
   const visible = rows

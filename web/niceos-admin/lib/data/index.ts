@@ -238,6 +238,13 @@ export function getWardCoverage(): Promise<mock.WardCoveragePoint[]> | mock.Ward
     : Promise.resolve(mock.getWardCoverage());
 }
 
+// Zone coverage
+export function getZoneCoverage(): Promise<mock.ZoneCoverage[]> | mock.ZoneCoverage[] {
+  return supabaseConfigured
+    ? live.getZoneCoverage()
+    : Promise.resolve(mock.getZoneCoverage());
+}
+
 // Territory hierarchy
 export function getTerritoryHierarchy(): Promise<mock.HierarchyNode[]> | mock.HierarchyNode[] {
   return supabaseConfigured
