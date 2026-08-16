@@ -321,9 +321,10 @@ export async function getRepManagement(): Promise<RepManagementRow[]> {
 
   const visitByRep = new Map<string, any[]>();
   for (const v of weekVisits ?? []) {
-    const arr = visitByRep.get(v.rep_id) ?? [];
+    const repId = v.rep_id ?? "";
+    const arr = visitByRep.get(repId) ?? [];
     arr.push(v);
-    visitByRep.set(v.rep_id, arr);
+    visitByRep.set(repId, arr);
   }
 
   return reps.map((rep) => {
@@ -451,9 +452,19 @@ export async function createDraftRoute(
       position: i + 1,
       planned_start: hm(vs),
       planned_end: hm(vs + dur),
-      visit_type: ret.status === "prospect" ? "prospecting" : "retail",
+      visit_type: (ret.status === "prospect" ? "prospecting" : "retail") as
+        | "prospecting"
+        | "retail",
       km_from_prev: i === 0 ? 0 : Math.round(km * 10) / 10,
       minutes_from_prev: i === 0 ? 0 : min,
+    } satisfies {
+      retailer_id: string;
+      position: number;
+      planned_start: string;
+      planned_end: string;
+      visit_type: "prospecting" | "retail";
+      km_from_prev: number;
+      minutes_from_prev: number;
     };
   });
 
