@@ -4,11 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Users, Map, ShoppingBag, Route as RouteIcon, ClipboardCheck, BarChart3, FileText, Bell, Settings, Grid3x3, LogOut, ListChecks } from "lucide-react";
 import { useRole } from "@/lib/role-context";
-import { ROLE_CONFIG } from "@/lib/data/mock";
 import { cn } from "@/lib/utils";
-import type { Role } from "@/lib/data/types";
-
-const isDev = process.env.NODE_ENV === "development";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; size?: string | number }>> = {
   Dashboard: LayoutDashboard,
@@ -42,14 +38,9 @@ function isActive(pathname: string, href: string) {
 export default function Sidebar({ alertCount = 0 }: { alertCount?: number }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole, config } = useRole();
+  const { config } = useRole();
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem("niceos-role");
-    } catch {
-      /* ignore */
-    }
     router.push("/login");
     router.refresh();
   };
@@ -63,7 +54,7 @@ export default function Sidebar({ alertCount = 0 }: { alertCount?: number }) {
           </div>
           <div>
             <h1 className="text-sm font-bold leading-tight text-white">NiceOS</h1>
-            <p className="text-[10px] text-emerald-300/70">Market Link · Nice Millers</p>
+            <p className="text-[10px] text-emerald-300/70">NICE MILLERS LIMITED</p>
           </div>
         </div>
       </div>
@@ -102,7 +93,7 @@ export default function Sidebar({ alertCount = 0 }: { alertCount?: number }) {
       </nav>
 
       <div className="border-t border-white/10 p-3">
-        <div className="mb-3 grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Link
             href="/settings"
             className={cn(
@@ -124,24 +115,6 @@ export default function Sidebar({ alertCount = 0 }: { alertCount?: number }) {
             Logout
           </button>
         </div>
-        {isDev && (
-          <div>
-            <label className="mb-1 block px-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300/60">
-              Preview role
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 outline-none focus:border-emerald-400"
-            >
-              {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_CONFIG[r].label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
     </aside>
   );

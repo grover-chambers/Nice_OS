@@ -20,6 +20,41 @@ class SyncScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 40),
           children: [
             const AppHeader(eyebrow: 'Offline queue', title: 'Sync'),
+            // Sync failure card — errors are never silent: the rep sees the
+            // reason and can retry immediately.
+            if (sync.hasSyncErrors)
+              Container(
+                margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBE9E7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Brand.stampRed, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.sync_problem, color: Brand.stampRed, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        sync.lastSyncError ?? 'Sync failed',
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Brand.stampRed, fontSize: 12.5),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.read<SyncProvider>().retry(),
+                      child: const Text('Retry'),
+                    ),
+                    IconButton(
+                      onPressed: () => context.read<SyncProvider>().clearSyncError(),
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Dismiss',
+                    ),
+                  ],
+                ),
+              ),
             // Sync hero card
             Container(
               margin: const EdgeInsets.fromLTRB(20, 4, 20, 4),

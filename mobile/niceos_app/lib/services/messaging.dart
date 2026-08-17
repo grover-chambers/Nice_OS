@@ -16,13 +16,9 @@ class MessagingService {
     debugPrint('[messaging] Email to $email - $subject');
     return false;
   }
-
-  /// Send the 2FA verification code. V1 generates the code client-side and
-  /// logs it; the production path is the `auth-otp` edge function.
-  Future<void> sendOTP(String email) async {
-    final code = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString();
-    debugPrint('[messaging] OTP for $email: $code');
-  }
+  // NOTE: no client-side sendOTP — OTP codes are generated server-side only
+  // (auth-otp / auth-verify-otp edge functions, being built). Never generate
+  // or log a code on the device.
 }
 
 final MessagingService messaging = MessagingService();

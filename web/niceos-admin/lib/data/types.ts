@@ -1,6 +1,11 @@
 // NiceOS domain types — shared across pages and (later) the Supabase data layer.
 
-export type Role = "admin" | "territory_manager" | "sales_rep" | "ceo";
+export type Role =
+  | "super_admin"
+  | "admin"
+  | "territory_manager"
+  | "sales_rep"
+  | "ceo";
 
 export type WardZone =
   | "Kiambu"

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Card, PageHeader, Badge } from "@/components/ui";
-import { WARD_META } from "@/lib/data/seed";
+import { WARD_META } from "@/lib/data/shared";
 import { toaster } from "@/components/toast";
 import type { OutletType, RetailerStatus, Tier, Rep } from "@/lib/data/types";
 

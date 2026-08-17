@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserSupabaseClient, supabaseConfigured } from "@/lib/supabase/client";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -10,24 +10,6 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  if (!supabaseConfigured) {
-    return (
-      <div className="space-y-4">
-        <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Live login is not configured yet. You can still explore the platform
-          in demo mode.
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="w-full rounded bg-primary-600 py-2 text-sm font-medium text-white hover:bg-primary-700"
-        >
-          Explore demo dashboard
-        </button>
-      </div>
-    );
-  }
 
   const supabase = createBrowserSupabaseClient();
 
@@ -96,13 +78,6 @@ export default function LoginForm() {
         className="w-full rounded bg-primary-600 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
       >
         {loading ? "Signing in..." : "Sign in"}
-      </button>
-      <button
-        type="button"
-        onClick={() => router.push("/dashboard")}
-        className="w-full rounded border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-      >
-        Explore demo dashboard
       </button>
     </form>
   );

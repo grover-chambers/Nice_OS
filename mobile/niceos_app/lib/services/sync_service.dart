@@ -128,11 +128,21 @@ class SyncService {
     }
 
     final results = <String, dynamic>{};
+    final failedEntities = <String>{};
     for (final entity in orderedEntities(byEntity.keys)) {
-      results[entity] = await onPush(entity, byEntity[entity]!);
+      final res = await onPush(entity, byEntity[entity]!);
+      results[entity] = res;
+      // A server-side error (edge-function failure, rejected batch, auth
+      // problem) must NOT mark the entity's rows as synced: they stay in the
+      // queue so a retry can push them, and the caller surfaces the error.
+      if (res['error'] != null) {
+        failedEntities.add(entity);
+      }
     }
 
     for (final item in pending) {
+      final entity = item['entity'] as String?;
+      if (entity != null && failedEntities.contains(entity)) continue;
       await markSynced(item['id'] as String);
     }
 

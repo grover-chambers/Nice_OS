@@ -5,13 +5,34 @@ import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/sync_provider.dart';
+import '../services/update_service.dart';
 import '../theme/brand.dart';
 import '../widgets/warm.dart';
 
 /// Dashboard — the rep's day at a glance: mission & objective, live stats and
-/// the day's tasks.
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+/// the day's tasks. Also the landing surface for the update alert and for
+/// visible sync failures (fail-closed: nothing is swallowed silently).
+class DashboardScreen extends StatefulWidget {
+  /// Index of the destination tab when a task row is tapped
+  /// (0 = submissions, 1 = census, 3 = intercepts). Null in tests.
+  final ValueChanged<int>? onNavigate;
+
+  const DashboardScreen({super.key, this.onNavigate});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Version-sync alert: fires once per dashboard mount (boot lands here).
+    // Offline or unreachable `app_versions` fails silently to "no update".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      updateService.promptIfAvailable(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,10 +45,11 @@ class DashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 40),
       children: [
         AppHeader(
-          eyebrow: "Field rep · ${auth.demoMode ? 'demo' : 'live'}",
+          eyebrow: 'Field rep',
           title: 'Jambo, ${auth.displayName.split(' ').first}',
           subtitle: 'Your mission and objectives for today.',
         ),
+        if (sync.hasSyncErrors) _SyncErrorBanner(sync: sync),
         // Mission / objective banner
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -97,17 +119,79 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         const SectionTitle('Tasks'),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              _TaskRow(icon: Icons.storefront_outlined, title: 'Census outlets', done: false, active: true),
-              _TaskRow(icon: Icons.people_outline, title: 'Run intercepts', done: false, active: true),
-              _TaskRow(icon: Icons.flag_outlined, title: 'Close day & submit', done: false),
+              _TaskRow(
+                icon: Icons.storefront_outlined,
+                title: 'Census outlets',
+                done: false,
+                active: true,
+                onTap: widget.onNavigate == null ? null : () => widget.onNavigate!(1),
+              ),
+              _TaskRow(
+                icon: Icons.people_outline,
+                title: 'Run intercepts',
+                done: false,
+                active: true,
+                onTap: widget.onNavigate == null ? null : () => widget.onNavigate!(3),
+              ),
+              _TaskRow(
+                icon: Icons.flag_outlined,
+                title: 'Close day & submit',
+                done: false,
+                onTap: widget.onNavigate == null ? null : () => widget.onNavigate!(0),
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Compact, visible sync-failure card with retry + dismiss. Without this the
+/// queue can fail forever with no surface telling the rep why.
+class _SyncErrorBanner extends StatelessWidget {
+  final SyncProvider sync;
+  const _SyncErrorBanner({required this.sync});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFBE9E7),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Brand.stampRed, width: 1),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.sync_problem, color: Brand.stampRed, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                sync.lastSyncError ?? 'Sync failed',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Brand.stampRed, fontSize: 12.5),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.read<SyncProvider>().retry(),
+              child: const Text('Retry'),
+            ),
+            IconButton(
+              onPressed: () => context.read<SyncProvider>().clearSyncError(),
+              icon: const Icon(Icons.close, size: 18),
+              tooltip: 'Dismiss',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -117,25 +201,34 @@ class _TaskRow extends StatelessWidget {
   final String title;
   final bool done;
   final bool active;
-  const _TaskRow({required this.icon, required this.title, this.done = false, this.active = false});
+  final VoidCallback? onTap;
+  const _TaskRow({required this.icon, required this.title, this.done = false, this.active = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return WarmCard(
-      child: Row(
-        children: [
-          Icon(icon, color: Brand.amberDeep, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink, fontSize: 14.5)),
-          ),
-          if (done)
-            const StampTag(StampStatus.visited, label: 'Done')
-          else if (active)
-            const StampTag(StampStatus.pending, label: 'Now')
-          else
-            const Eyebrow('Later'),
-        ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Icon(icon, color: Brand.amberDeep, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink, fontSize: 14.5)),
+            ),
+            if (done)
+              const StampTag(StampStatus.visited, label: 'Done')
+            else if (active)
+              const StampTag(StampStatus.pending, label: 'Now')
+            else
+              const Eyebrow('Later'),
+            if (onTap != null) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
+            ],
+          ],
+        ),
       ),
     );
   }

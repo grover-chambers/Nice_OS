@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handleCors, json } from "../_shared/cors.ts";
-import { requireRep, type SyncContext } from "../_shared/auth.ts";
+import { requireRep, type RepContext } from "../_shared/auth.ts";
+import { forwardPendingOrder } from "../_shared/order-forward.ts";
 
 const ENTITIES = [
   "retailers",
@@ -48,7 +49,7 @@ interface Row {
 // in this same batch as a brand-new offline row).
 function isOwnedRow(
   row: Row,
-  ctx: SyncContext,
+  ctx: RepContext,
   ownedParents: OwnedParents
 ): boolean {
   const repId = ctx.rep.id;
@@ -139,6 +140,7 @@ serve(async (req) => {
 
   const applied: Record<string, number> = {};
   const conflicts: unknown[] = [];
+  const pendingOrderIds: string[] = [];
 
   for (const group of body.batch) {
     const entity = group?.entity as string;
@@ -159,6 +161,25 @@ serve(async (req) => {
     }
     applied[entity] = data?.applied ?? 0;
     if (Array.isArray(data?.conflicts)) conflicts.push(...data.conflicts);
+
+    // Collect applied order intents so pending ones can be forwarded to the
+    // sales order desk after the batch lands.
+    if (entity === "order_intents") {
+      for (const r of owned) {
+        if (typeof r.id === "string" && r.forward_status === "pending") {
+          pendingOrderIds.push(r.id);
+        }
+      }
+    }
+  }
+
+  // Best-effort WhatsApp forwarding for newly applied orders. A forwarding
+  // failure is recorded on the order (forward_status = 'failed') and never
+  // fails the sync itself.
+  if (pendingOrderIds.length > 0) {
+    await Promise.allSettled(
+      pendingOrderIds.map((id) => forwardPendingOrder(ctx.db, id))
+    );
   }
 
   return json({

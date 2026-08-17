@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
-import { Badge, PageHeader, DemoBanner, EmptyState, Segmented } from "@/components/ui";
-import { fmtDateTime } from "@/lib/data/mock";
+import { Badge, PageHeader, EmptyState, Segmented } from "@/components/ui";
+import { fmtDateTime } from "@/lib/data/shared";
 import { toaster } from "@/components/toast";
 import type { Alert } from "@/lib/data/types";
 
@@ -44,7 +44,7 @@ export default function AlertsView({ alerts: all }: { alerts: Alert[] }) {
         title="Executive alerts"
         description="Churn risk, competitive activity, stockouts and route flags from across the territory."
       />
-      <DemoBanner />
+      
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="w-64">

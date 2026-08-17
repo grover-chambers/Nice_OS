@@ -1,5 +1,5 @@
 // NiceOS Supabase data layer.
-// Server-side query functions that replace the in-memory demo dataset.
+// Server-side query functions backed by the live database.
 // Every export matches the signature of lib/data/index.ts so page code
 // stays unchanged.
 
@@ -7,59 +7,33 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
 import type {
   Alert,
-  ChurnRisk,
   CompetitorObservation,
   Opportunity,
   OrderIntent,
   Rep,
   Retailer,
-  RetailerStatus,
-  Role,
   Route,
   RouteStatus,
   RouteStop,
   Visit,
   WardZone,
 } from "./types";
-
-// --- re-export shared utils (unchanged) -------------------------------------
-
-export { dateString, todayString } from "./mock";
-
-export const ZONES: WardZone[] = [
-  "Kiambu",
-  "Central",
-  "Northern",
-  "Eastern",
-  "South-Eastern",
-  "Kajiado",
-];
-
-// --- tiny utils -------------------------------------------------------------
-
-export const fmtKes = (n: number) =>
-  "KSh " +
-  Math.round(n).toLocaleString("en-KE", { maximumFractionDigits: 0 });
-
-export const fmtNum = (n: number) => Math.round(n).toLocaleString("en-KE");
-
-export const fmtPct = (n: number, digits = 0) => `${n.toFixed(digits)}%`;
-
-export const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-KE", { day: "numeric", month: "short" });
-
-export const fmtDateTime = (iso: string) =>
-  new Date(iso).toLocaleString("en-KE", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
-export const daysSince = (iso: string | null) => {
-  if (!iso) return 999;
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-};
+import {
+  WARD_META,
+  ZONES,
+  fmtKes,
+  fmtNum,
+  haversineKm,
+  type CensusSummary,
+  type CensusWard,
+  type DashboardSummary,
+  type HierarchyNode,
+  type RepManagementRow,
+  type RetailerFilters,
+  type RouteFilters,
+  type WardCoveragePoint,
+  type ZoneCoverage,
+} from "./shared";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -167,16 +141,6 @@ function dbToVisit(row: any): Visit {
 
 // --- retailers --------------------------------------------------------------
 
-export type RetailerFilters = {
-  q?: string;
-  status?: RetailerStatus | "all";
-  zone?: WardZone | "all";
-  type?: Retailer["type"] | "all";
-  tier?: Retailer["tier"] | "all";
-  churnRisk?: ChurnRisk | "all";
-  ward?: string | "all";
-};
-
 export async function getRetailers(
   filters: RetailerFilters = {}
 ): Promise<Retailer[]> {
@@ -267,8 +231,7 @@ export async function createRetailer(
 
 // --- reps -------------------------------------------------------------------
 
-export async function getReps(): Promise<Rep[]> {
-  const supabase = createServerSupabaseClient();
+export async function getReps(): Promise<Rep[]> {  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from("reps")
     .select("*")
@@ -290,21 +253,6 @@ export async function getRep(id: string): Promise<Rep | undefined> {
   if (error || !data) return undefined;
   return dbToRep(data);
 }
-
-export type RepManagementRow = {
-  rep: Rep;
-  targetVisitsMonth: number;
-  actualVisitsMonth: number;
-  visitsThisWeek: number;
-  targetThisWeek: number;
-  onTargetPct: number;
-  ordersPlaced: number;
-  orderValue: number;
-  coverageWards: number;
-  assignedWards: number;
-  attendancePct: number;
-  lastSyncAgoMin: number;
-};
 
 export async function getRepManagement(): Promise<RepManagementRow[]> {
   const reps = await getReps();
@@ -352,25 +300,13 @@ export async function getRepManagement(): Promise<RepManagementRow[]> {
       orderValue,
       coverageWards: assignedWards,
       assignedWards,
-      attendancePct:
-        rep.status === "active"
-          ? Math.round(78 + Math.random() * 22)
-          : Math.round(30 + Math.random() * 30),
-      lastSyncAgoMin: rep.onRoute
-        ? Math.round(2 + Math.random() * 58)
-        : Math.round(90 + Math.random() * 510),
+      attendancePct: rep.status === "active" ? 100 : 0,
+      lastSyncAgoMin: 0,
     };
   });
 }
 
 // --- routes -----------------------------------------------------------------
-
-export type RouteFilters = {
-  status?: RouteStatus | "all";
-  zone?: WardZone | "all";
-  repId?: string | "all";
-  date?: string | "all";
-};
 
 export async function getRoutes(
   filters: RouteFilters = {}
@@ -428,18 +364,18 @@ export async function createDraftRoute(
     .limit(20);
 
   const chosen = (pool ?? [])
-    .sort(() => Math.random() - 0.5)
+    .sort((a: any, b: any) => a.id.localeCompare(b.id))
     .slice(0, 8);
 
   let cursor: { lat: number; lng: number } | null = null;
   let accKm = 0;
   let accMin = 0;
-  const startMinutes = 8 * 60 + Math.floor(Math.random() * 90);
+  const startMinutes = 8 * 60 + 45;
 
   const stops = chosen.map((ret: any, i: number) => {
     const km = cursor
       ? haversineKm(cursor.lat, cursor.lng, ret.lat, ret.lng) * 1.3
-      : 1 + Math.random() * 2;
+      : 1.5;
     const min = Math.max(5, Math.round(km * 2.4));
     cursor = { lat: ret.lat, lng: ret.lng };
     accKm += km;
@@ -501,10 +437,6 @@ export async function createDraftRoute(
 export async function deleteRoute(id: string): Promise<void> {
   const supabase = createServerSupabaseClient();
   await supabase.from("routes").delete().eq("id", id);
-}
-
-export function nowIso(): string {
-  return new Date().toISOString();
 }
 
 export async function setRouteStatus(
@@ -599,7 +531,7 @@ export async function optimizeRoute(id: string): Promise<void> {
   const newStops: RouteStop[] = ordered.map((ret, i) => {
     const km =
       i === 0
-        ? 1 + Math.random() * 2
+        ? 1.5
         : haversineKm(ordered[i - 1].lat, ordered[i - 1].lng, ret.lat, ret.lng) *
           1.3;
     const min = Math.max(5, Math.round(km * 2.4));
@@ -635,23 +567,6 @@ export async function optimizeRoute(id: string): Promise<void> {
       end_time: hm(startMin + accMin + visitMins),
     })
     .eq("id", id);
-}
-
-function haversineKm(
-  aLat: number,
-  aLng: number,
-  bLat: number,
-  bLng: number
-): number {
-  const R = 6371;
-  const dLat = ((bLat - aLat) * Math.PI) / 180;
-  const dLng = ((bLng - aLng) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((aLat * Math.PI) / 180) *
-      Math.cos((bLat * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
 }
 
 function parseHm(t: string): number {
@@ -815,54 +730,6 @@ export async function getAlertCounts() {
 }
 
 // --- dashboard aggregates ---------------------------------------------------
-
-export type ZoneCoverage = {
-  zone: WardZone;
-  wardsTotal: number;
-  wardsCovered: number;
-  retailers: number;
-  active: number;
-  atRisk: number;
-  coveragePct: number;
-};
-
-export type DashboardSummary = {
-  totals: {
-    retailers: number;
-    active: number;
-    atRisk: number;
-    prospects: number;
-    churned30d: number;
-  };
-  coveragePct: number;
-  visitsToday: number;
-  visitsWeek: number;
-  verificationRate: number;
-  ordersToday: number;
-  orderValueToday: number;
-  pendingOrderIntents: number;
-  activeReps: number;
-  onRouteNow: number;
-  routesToday: number;
-  healthDistribution: { label: string; count: number }[];
-  weeklyTrend: {
-    day: string;
-    visits: number;
-    orders: number;
-    value: number;
-  }[];
-  repLeaderboard: {
-    repId: string;
-    name: string;
-    color: string;
-    visits: number;
-    orders: number;
-    value: number;
-    coveragePct: number;
-  }[];
-  alerts: Alert[];
-  zoneCoverage: ZoneCoverage[];
-};
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const supabase = createServerSupabaseClient();
@@ -1071,16 +938,6 @@ export async function getZoneCoverage(): Promise<ZoneCoverage[]> {
 
 // --- ward coverage (map overlay) --------------------------------------------
 
-export type WardCoveragePoint = {
-  ward: string;
-  zone: WardZone;
-  total: number;
-  active: number;
-  atRisk: number;
-  lat: number;
-  lng: number;
-};
-
 export async function getWardCoverage(): Promise<WardCoveragePoint[]> {
   const retailers = await getRetailers();
   const map = new Map<string, WardCoveragePoint>();
@@ -1103,21 +960,6 @@ export async function getWardCoverage(): Promise<WardCoveragePoint[]> {
 }
 
 // --- territory hierarchy ----------------------------------------------------
-
-export type HierarchyNode = {
-  id: string;
-  name: string;
-  level: "zone" | "subcounty" | "ward";
-  zone?: WardZone;
-  parentId?: string;
-  retailerCount: number;
-  activeCount: number;
-  coveragePct: number;
-  children?: HierarchyNode[];
-};
-
-// Reuse the WARD_META from the seed module for hierarchy building
-import { WARD_META } from "./seed";
 
 export async function getTerritoryHierarchy(): Promise<HierarchyNode[]> {
   const retailers = await getRetailers();
@@ -1207,32 +1049,6 @@ export async function getRetailersByZone(): Promise<
 }
 
 // --- census (live capture data) ---------------------------------------------
-
-export type CensusWard = {
-  ward: string;
-  zone: WardZone;
-  outlets: number;
-  gpsCaptured: number;
-  intercepts: number;
-};
-
-export type CensusSummary = {
-  totalOutlets: number;
-  gpsCaptured: number;
-  newRegistered: number;
-  intercepts: number;
-  officers: number;
-  lastCaptureAt: string | null;
-  byZone: {
-    zone: WardZone;
-    outlets: number;
-    gpsCaptured: number;
-    intercepts: number;
-    officers: number;
-  }[];
-  byWard: CensusWard[];
-  daily: { date: string; outlets: number; intercepts: number }[];
-};
 
 const ZONE_BY_WARD = new Map<string, WardZone>();
 for (const f of TERRITORY_WARDS.features) {
@@ -1360,5 +1176,4 @@ export async function getCensusSummary(): Promise<CensusSummary> {
 
 // --- role config ------------------------------------------------------------
 
-import type { RoleConfig } from "./mock";
-export { ROLE_CONFIG, getRoleConfig } from "./mock";
+// ROLE_CONFIG / getRoleConfig live in ./shared and are re-exported by index.ts.

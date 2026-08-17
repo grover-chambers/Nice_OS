@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -8,8 +9,27 @@ import '../providers/sync_provider.dart';
 import '../theme/brand.dart';
 import '../widgets/warm.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _version = 'v…';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() => _version = 'v${info.version}+${info.buildNumber}');
+    }).catchError((_) {
+      if (!mounted) return;
+      setState(() => _version = 'v?');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +108,9 @@ class ProfileScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: _ProfileRow(keyLabel: 'Sync', value: 'Local queue'),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: _ProfileRow(keyLabel: 'App', value: 'v1.4.0'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _ProfileRow(keyLabel: 'App', value: _version),
             ),
             // Log out
             Padding(

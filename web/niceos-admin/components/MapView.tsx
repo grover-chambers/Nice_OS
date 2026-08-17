@@ -8,7 +8,6 @@ import { ExternalLink, Maximize2, Minimize2, Settings2 } from "lucide-react";
 import { TERRITORY_WARDS } from "@/lib/geo/satellite-wards";
 import { WARD_ZONES, type WardProperties } from "@/lib/geo/nairobi-wards";
 import { NAIROBI_CORRIDORS } from "@/lib/geo/nairobi-corridors";
-import { CENSUS_AREAS } from "@/lib/data/census";
 import { retailerStatusMeta, zoneColor } from "@/lib/status";
 import { useMapFit } from "@/lib/hooks/useMapFit";
 import { basemapStyleUrl, type BasemapStyle, DEFAULT_BASEMAP } from "@/lib/geo/basemap";
@@ -129,8 +128,6 @@ export type MapViewProps = {
   // ---- Filters panel control (the sidebar in the territories/standalone views)
   /** Show the controls sidebar. Default false (pages that already have their own sidebar pass false). */
   showControls?: boolean;
-  /** Show census area pins (default true only when no retailers passed — census page convention). */
-  showCensusAreas?: boolean;
   /** Show the corridors overlay toggle in the controls panel. Default true (only relevant when showControls=true). */
   allowCorridors?: boolean;
   /** Initial zone to zoom to on load (territories page with ?zone=Central). */
@@ -159,7 +156,6 @@ export default function MapView({
   zoom = 10.5,
   overlay,
   showControls = false,
-  showCensusAreas,
   allowCorridors = true,
   initialZone = null,
   standalone = false,
@@ -182,9 +178,6 @@ export default function MapView({
   const [outlineOnly, setOutlineOnly] = useState(false);
   const [showCorridors, setShowCorridors] = useState(false);
   const [showRetailers, setShowRetailers] = useState(true);
-  const [showCensus, setShowCensus] = useState(
-    showCensusAreas ?? (!retailers && (showControls || standalone))
-  );
   const [activeZone, setActiveZone] = useState<string | null>(
     initialZone && (WARD_ZONES as readonly string[]).includes(initialZone) ? initialZone : null
   );
@@ -224,23 +217,6 @@ export default function MapView({
       })),
     };
   }, [retailers, retailerColor, selectedRetailerId]);
-
-  const censusAreaFeatures = useMemo(
-    () => ({
-      type: "FeatureCollection" as const,
-      features: CENSUS_AREAS.map((a) => ({
-        type: "Feature" as const,
-        properties: {
-          name: a.name,
-          zone: a.zone,
-          shops: a.shops,
-          color: zoneColor(a.zone),
-        },
-        geometry: { type: "Point" as const, coordinates: [a.lng, a.lat] },
-      })),
-    }),
-    []
-  );
 
   const routeFeatures = useMemo(() => {
     if (!route) return null;
@@ -333,7 +309,6 @@ export default function MapView({
         type: "geojson",
         data: (retailerFeatures ?? emptyFC) as any,
       });
-      map.addSource("censusAreas", { type: "geojson", data: censusAreaFeatures as any });
       if (route) {
         map.addSource("route-line", { type: "geojson", data: routeFeatures as any });
         if (stopFeatures) {
@@ -370,36 +345,6 @@ export default function MapView({
         type: "line",
         source: "wards",
         paint: { "line-color": "#FBFAF6", "line-width": 1.1, "line-opacity": 1 },
-      });
-      map.addLayer({
-        id: "census-areas-circle",
-        type: "circle",
-        source: "censusAreas",
-        layout: { visibility: showCensus ? "visible" : "none" },
-        paint: {
-          "circle-radius": 6,
-          "circle-color": ["get", "color"],
-          "circle-stroke-color": "#FFFFFF",
-          "circle-stroke-width": 1.8,
-        },
-      });
-      map.addLayer({
-        id: "census-areas-symbol",
-        type: "symbol",
-        source: "censusAreas",
-        layout: {
-          visibility: showCensus ? "visible" : "none",
-          "text-field": ["get", "name"],
-          "text-offset": [0, 1.3],
-          "text-anchor": "top",
-          "text-size": 11,
-          "text-font": ["Noto Sans Bold"],
-        },
-        paint: {
-          "text-color": "#1F2937",
-          "text-halo-color": "#FFFFFF",
-          "text-halo-width": 1.5,
-        },
       });
       map.addLayer({
         id: "retailers-selected",
@@ -520,30 +465,6 @@ export default function MapView({
         }
       });
 
-      map.on("mouseenter", "census-areas-circle", (e: any) => {
-        map.getCanvas().style.cursor = "pointer";
-        const f = e.features?.[0];
-        if (f && popupRef.current) {
-          popupRef.current
-            .setLngLat(e.lngLat)
-            .setHTML(
-              `<strong>${f.properties.name}</strong><br/><span style="color:#64748b">${f.properties.zone} zone · ~${f.properties.shops} shops target</span>`
-            )
-            .addTo(map);
-        }
-      });
-      map.on("mouseleave", "census-areas-circle", () => {
-        map.getCanvas().style.cursor = "";
-        popupRef.current?.remove();
-      });
-      map.on("click", "census-areas-circle", (e: any) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        const g = f.geometry as { type: string; coordinates: [number, number] };
-        if (g.type !== "Point") return;
-        map.easeTo({ center: g.coordinates, zoom: Math.max(map.getZoom(), 13.5), duration: 700 });
-      });
-
       readyRef.current = true;
       setReady(true);
       mapRef.current = map;
@@ -614,14 +535,6 @@ export default function MapView({
       map.setLayoutProperty("retailers-selected", "visibility", vis as any);
     }
   }, [retailerFeatures, showRetailers]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !map.getLayer("census-areas-circle")) return;
-    const vis = showCensus ? "visible" : "none";
-    map.setLayoutProperty("census-areas-circle", "visibility", vis as any);
-    map.setLayoutProperty("census-areas-symbol", "visibility", vis as any);
-  }, [showCensus]);
 
   // Auto-zoom on activeZone change
   useEffect(() => {
@@ -877,25 +790,6 @@ export default function MapView({
               </div>
             </div>
           )}
-
-          <div>
-            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              Census areas
-            </h3>
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                checked={showCensus}
-                onChange={(e) => setShowCensus(e.target.checked)}
-                className="accent-emerald-700"
-              />
-              Show census area pins
-            </label>
-            <p className="mt-1.5 text-[11px] text-slate-500">
-              {CENSUS_AREAS.length} areas across 4 census routes.
-            </p>
-          </div>
-
           {showControls && selectedWard && (
             <div>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">

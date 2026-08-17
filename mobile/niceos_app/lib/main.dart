@@ -12,15 +12,16 @@ import 'providers/shift_provider.dart';
 import 'providers/submission_provider.dart';
 import 'providers/sync_provider.dart';
 import 'screens/check_in_screen.dart';
+import 'screens/fatal_config_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/quality_service.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
-import 'services/update_service.dart';
 import 'theme/brand.dart';
 
 /// Rejects empty / obviously-placeholder Supabase values so the app never
-/// blocks on `Supabase.initialize` against a fake project URL.
+/// boots against a fake project URL. Any placeholder (e.g. the
+/// `your-...-supabase.co` values in `.env.example`) counts as unconfigured.
 bool _isRealConfig(String v) {
   final s = v.trim();
   if (s.isEmpty) return false;
@@ -54,39 +55,36 @@ Future<void> main() async {
       const String.fromEnvironment('SUPABASE_ANON_KEY');
 
   final configured = _isRealConfig(url) && _isRealConfig(anonKey);
-
-  var demoMode = !configured;
-  if (configured) {
-    try {
-      await Supabase.initialize(url: url, publishableKey: anonKey)
-          .timeout(const Duration(seconds: 10));
-      await SupabaseService.instance.init();
-      updateService.configure();
-    } catch (_) {
-      // Bad/unreachable Supabase config must never leave a blank screen:
-      // fall back to offline mode so the app still boots.
-      demoMode = true;
-    }
+  if (!configured) {
+    // Fail closed: no backend config -> branded fatal screen, never demo mode.
+    runApp(const FatalConfigScreen());
+    return;
   }
 
-  runApp(NiceOSApp(demoMode: demoMode));
+  try {
+    await Supabase.initialize(url: url, publishableKey: anonKey)
+        .timeout(const Duration(seconds: 10));
+    await SupabaseService.instance.init();
+  } catch (_) {
+    // Bad/unreachable Supabase project -> branded fatal screen, never demo.
+    runApp(const FatalConfigScreen());
+    return;
+  }
+
+  runApp(const NiceOSApp());
 }
 
 class NiceOSApp extends StatelessWidget {
-  /// [demoMode] runs the app fully offline: no Supabase project needed, all
-  /// capture flows work against local Hive boxes + the sync queue.
-  final bool demoMode;
-
-  const NiceOSApp({super.key, this.demoMode = false});
+  const NiceOSApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final shiftProvider = ShiftProvider();
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(demoMode: demoMode)),
-        ChangeNotifierProvider(create: (_) => RetailerProvider(demoMode: demoMode)),
-        ChangeNotifierProvider(create: (_) => SyncProvider(demoMode: demoMode)),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => RetailerProvider()),
+        ChangeNotifierProvider(create: (_) => SyncProvider()),
         ChangeNotifierProvider(create: (_) => CensusProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => InterceptProvider(shift: shiftProvider)),
         ChangeNotifierProvider(create: (_) => SubmissionProvider(shift: shiftProvider)),

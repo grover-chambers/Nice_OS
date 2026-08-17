@@ -1,13 +1,13 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { Card, PageHeader, DemoBanner, Td, Th } from "@/components/ui";
-import { fmtKes, todayString } from "@/lib/data/mock";
+import { Card, PageHeader, Td, Th } from "@/components/ui";
+import { fmtKes, todayString } from "@/lib/data/shared";
 import { downloadCsv } from "@/lib/csv";
 import { toaster } from "@/components/toast";
 import ReportsTabs, { type ReportsTab } from "@/components/reports/ReportsTabs";
 import type { Retailer, Visit, CompetitorObservation, OrderIntent, WardZone } from "@/lib/data/types";
-import type { RepManagementRow } from "@/lib/data/mock";
+import type { RepManagementRow } from "@/lib/data/shared";
 
 type ZoneCoverage = { zone: WardZone; wardsCovered: number; wardsTotal: number; retailers: number; active: number; atRisk: number; coveragePct: number };
 type ByZone = { zone: string; active: number; prospect: number; atRisk: number; churned: number; total: number };
@@ -51,9 +51,9 @@ export default function ReportsView({
     <div>
       <PageHeader
         title="Reports"
-        description="Downloadable operational reports for Market Link management and Nice Millers stakeholders."
+        description="Downloadable operational reports for NICE MILLERS LIMITED management and stakeholders."
       />
-      <DemoBanner />
+      
       <ReportsTabs active={tab} />
       {tabContent}
     </div>

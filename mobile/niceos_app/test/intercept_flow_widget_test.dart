@@ -22,6 +22,19 @@ class _FakeLocation extends LocationService {
   Future<Position?> getCurrentPosition() async => fix;
 }
 
+/// Widget tests run without a Supabase project, so the real [AuthProvider]
+/// stays unauthenticated (there is no demo fallback anymore). This subclass
+/// fakes only the *session state* — it never fakes login or credentials —
+/// so the flow's "must be authenticated" guard is satisfied.
+class _AuthenticatedAuth extends AuthProvider {
+  @override
+  AppUser? get currentUser =>
+      const AppUser(id: 'rep-1', email: 'rep@nice.ke', fullName: 'Test Rep');
+
+  @override
+  bool get isAuthenticated => true;
+}
+
 Position _fix({double accuracy = 4.0}) => Position(
       latitude: -1.2833,
       longitude: 36.8167,
@@ -71,7 +84,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<AuthProvider>(
-            create: (_) => AuthProvider(demoMode: true),
+            create: (_) => _AuthenticatedAuth(),
           ),
           ChangeNotifierProvider<InterceptProvider>.value(value: intercepts),
         ],
@@ -232,6 +245,6 @@ void main() {
     expect(saved.householdSizeBand, '3–4');
     expect(saved.unaidedBrandsAware, ['Pembe']);
     expect(saved.aidedBrandsAware, ['Nice']);
-    expect(saved.enumeratorId, 'demo-rep');
+    expect(saved.enumeratorId, 'rep-1');
   });
 }

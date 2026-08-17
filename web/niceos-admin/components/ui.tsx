@@ -191,18 +191,6 @@ export function PageHeader({
   );
 }
 
-export function DemoBanner() {
-  return (
-    <div className="mb-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs text-blue-800">
-      <span className="mt-0.5">•</span>
-      <p>
-        <b>Demo mode</b> — showing a realistic sample dataset generated in-app.
-        Configure Supabase to connect live field data.
-      </p>
-    </div>
-  );
-}
-
 export function Segmented<T extends string>({
   options,
   value,

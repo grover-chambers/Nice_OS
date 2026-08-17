@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Camera, CheckCircle2, MapPin, ShoppingCart } from "lucide-react";
-import { Card, Badge, PageHeader, DemoBanner, EmptyState, Td, Th, Segmented } from "@/components/ui";
-import { fmtKes, fmtDateTime, daysSince } from "@/lib/data/mock";
+import { Card, Badge, PageHeader, EmptyState, Td, Th, Segmented } from "@/components/ui";
+import { fmtKes, fmtDateTime, daysSince } from "@/lib/data/shared";
 import { visitStatusMeta } from "@/lib/status";
 import type { VisitStatus, Visit, Retailer, Rep } from "@/lib/data/types";
 
@@ -42,7 +42,7 @@ export default function VisitsView({
         title="Field visits"
         description="GPS-verified field interactions captured by reps on route."
       />
-      <DemoBanner />
+      
 
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[

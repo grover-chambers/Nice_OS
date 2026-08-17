@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, Sparkles } from "lucide-react";
-import { Card, Badge, DemoBanner, EmptyState, Td, Th } from "@/components/ui";
-import { dateString, todayString, fmtNum } from "@/lib/data/mock";
+import { Card, Badge, EmptyState, Td, Th } from "@/components/ui";
+import { dateString, todayString, fmtNum } from "@/lib/data/shared";
 import { routeStatusMeta } from "@/lib/status";
 import { toaster } from "@/components/toast";
 import type { Route, Rep, RouteStatus } from "@/lib/data/types";
@@ -109,7 +109,7 @@ export default function RoutePlanning({
           <Sparkles size={14} /> Generate draft route
         </button>
       </div>
-      <DemoBanner />
+      
 
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {summary.map((s) => (

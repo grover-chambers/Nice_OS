@@ -11,10 +11,10 @@ import {
 } from "recharts";
 import { BadgeCheck, Building2, Package, ShieldCheck, TrendingUp } from "lucide-react";
 import MapViewWrapper from "@/components/MapViewWrapper";
-import { Card, StatCard, Badge, PageHeader, DemoBanner, Progress, Td, Th } from "@/components/ui";
-import { fmtKes, fmtNum } from "@/lib/data/mock";
+import { Card, StatCard, Badge, PageHeader, Progress, Td, Th } from "@/components/ui";
+import { fmtKes, fmtNum } from "@/lib/data/shared";
 import type { CompetitorObservation, Retailer } from "@/lib/data/types";
-import type { DashboardSummary } from "@/lib/data/mock";
+import type { DashboardSummary } from "@/lib/data/shared";
 
 export default function ClientView({
   summary,
@@ -45,15 +45,15 @@ export default function ClientView({
   return (
     <div>
       <PageHeader
-        title="Nice Millers — Executive Overview"
-        description="Report view for the Nice Limited CEO. Overview of coverage, orders and competitive landscape."
+        title="NICE MILLERS LIMITED — Executive Overview"
+        description="Report view for the NICE MILLERS LIMITED CEO. Overview of coverage, orders and competitive landscape."
         actions={
           <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
             <ShieldCheck size={13} /> CEO report view
           </span>
         }
       />
-      <DemoBanner />
+      
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

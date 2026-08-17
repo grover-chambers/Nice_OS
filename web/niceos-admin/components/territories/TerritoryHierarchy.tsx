@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight, Layers, MapPin, Plus, Search } from "lucide-
 import { Badge, EmptyState } from "@/components/ui";
 import { zoneColor } from "@/lib/status";
 import { toaster } from "@/components/toast";
-import type { HierarchyNode } from "@/lib/data/mock";
+import type { HierarchyNode } from "@/lib/data/shared";
 
 export default function TerritoryHierarchy({ tree }: { tree: HierarchyNode[] }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -113,7 +113,16 @@ export default function TerritoryHierarchy({ tree }: { tree: HierarchyNode[] }) 
         </div>
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-4 py-2.5">
           <button
-            onClick={() => toaster.success("Hierarchy export ready (demo)")}
+            onClick={() => {
+              const blob = new Blob([JSON.stringify(tree, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `territory-hierarchy-${new Date().toISOString().slice(0, 10)}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toaster.success("Hierarchy exported as JSON");
+            }}
             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           >
             Export hierarchy

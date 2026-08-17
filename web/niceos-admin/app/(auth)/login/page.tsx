@@ -18,9 +18,9 @@ import {
 import LoginForm from "@/components/LoginForm";
 
 export const metadata: Metadata = {
-  title: "NICE Rice Millers — NiceOS Market Intelligence",
+  title: "NICE MILLERS LIMITED — NiceOS Market Intelligence",
   description:
-    "NiceOS — Market Activation & Intelligence Platform for Nice Rice Millers, Mwea, Kirinyaga County.",
+    "NiceOS — Market Activation & Intelligence Platform for NICE MILLERS LIMITED, Mwea, Kirinyaga County.",
 };
 
 const features = [
@@ -113,7 +113,7 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-widest text-emerald-400">
-                    NICE Rice Millers
+                    NICE MILLERS LIMITED
                   </p>
                   <p className="text-xs text-slate-400">Mwea · Kirinyaga County</p>
                 </div>
@@ -186,7 +186,7 @@ export default function LoginPage() {
               <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-xs text-slate-400">
                 <span className="flex items-center gap-2">
                   <Users size={14} className="text-emerald-400" />
-                  Roles: Sales Rep · Territory Manager · Admin · CEO
+                  Roles: Super Admin · Sales Rep · Territory Manager · Admin · CEO
                 </span>
                 <span className="flex items-center gap-2">
                   <Smartphone size={14} className="text-amber-400" />
@@ -199,7 +199,7 @@ export default function LoginPage() {
               </div>
 
               <p className="mt-10 pb-2 text-[11px] text-slate-500">
-                © {new Date().getFullYear()} NiceOS · Nice Rice Millers Ltd — internal platform
+                © {new Date().getFullYear()} NiceOS · NICE MILLERS LIMITED — internal platform
               </p>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function LoginPage() {
               N
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-900">NICE Rice Millers</p>
+              <p className="text-sm font-bold text-slate-900">NICE MILLERS LIMITED</p>
               <p className="text-[11px] text-slate-500">NiceOS Market Intelligence</p>
             </div>
           </div>

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import MapViewWrapper from "@/components/MapViewWrapper";
 import { Card, Badge, PageHeader, EmptyState, Progress } from "@/components/ui";
-import { fmtNum } from "@/lib/data/mock";
+import { fmtNum } from "@/lib/data/shared";
 import { routeStatusMeta } from "@/lib/status";
 import { toaster } from "@/components/toast";
 import type { Route, Retailer, Rep, RouteStop } from "@/lib/data/types";

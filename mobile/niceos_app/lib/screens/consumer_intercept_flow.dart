@@ -128,7 +128,13 @@ class _ConsumerInterceptFlowState extends State<ConsumerInterceptFlow> {
 
   Future<void> _submit() async {
     setState(() => _busy = true);
-    final repId = context.read<AuthProvider>().currentUser?.id ?? 'demo-rep';
+    // Fail closed: only reachable when authenticated — never fall back to a
+    // fake rep id.
+    final repId = context.read<AuthProvider>().currentUser?.id;
+    if (repId == null) {
+      setState(() => _busy = false);
+      throw StateError('Not authenticated — sign in before submitting an intercept.');
+    }
     _lock.recordAided([..._aidedFlour, ..._aidedDairy]);
     try {
       await context.read<InterceptProvider>().submit(

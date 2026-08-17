@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MapPin, Plus, Search, Store } from "lucide-react";
 import MapViewWrapper from "@/components/MapViewWrapper";
-import { Card, Badge, PageHeader, DemoBanner, EmptyState, Progress } from "@/components/ui";
-import { fmtDate, fmtKes, daysSince } from "@/lib/data/mock";
+import { Card, Badge, PageHeader, EmptyState, Progress } from "@/components/ui";
+import { fmtDate, fmtKes, daysSince } from "@/lib/data/shared";
 import { retailerStatusMeta, zoneColor } from "@/lib/status";
 import type { Retailer, RetailerStatus, WardZone, Rep } from "@/lib/data/types";
-import { WARD_META } from "@/lib/data/seed";
+import { WARD_META } from "@/lib/data/shared";
 
 const STATUSES: RetailerStatus[] = ["active", "prospect", "at-risk", "churned", "blocked"];
 
@@ -74,7 +74,7 @@ export default function RetailersView({
           </Link>
         }
       />
-      <DemoBanner />
+      
 
       <Card pad={false} className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3">

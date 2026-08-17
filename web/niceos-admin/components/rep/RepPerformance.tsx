@@ -11,10 +11,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Award } from "lucide-react";
-import { Card, Badge, PageHeader, DemoBanner, Segmented, Td, Th, Progress, tableWrap } from "@/components/ui";
-import { fmtKes, fmtNum } from "@/lib/data/mock";
+import { Card, Badge, PageHeader, Segmented, Td, Th, Progress, tableWrap } from "@/components/ui";
+import { fmtKes, fmtNum } from "@/lib/data/shared";
 import type { WardZone } from "@/lib/data/types";
-import type { RepManagementRow } from "@/lib/data/mock";
+import type { RepManagementRow } from "@/lib/data/shared";
 
 export default function RepPerformance({ rows }: { rows: RepManagementRow[] }) {
   const [zone, setZone] = useState<WardZone | "all">("all");
@@ -38,7 +38,7 @@ export default function RepPerformance({ rows }: { rows: RepManagementRow[] }) {
         title="Rep performance"
         description="Leaderboard and target-vs-actual activity across the field team."
       />
-      <DemoBanner />
+      
 
       <div className="mb-4 flex items-center gap-2">
         <Segmented

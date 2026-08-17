@@ -16,9 +16,8 @@ const STYLE_URLS: Record<BasemapStyle, string> = {
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
 
-// Default to Positron — matches the look the demo's "Minimal" toggle had previously
-// (clean CARTO Positron raster), but now as crisp vector tiles. Pages that need
-// street detail (routes/analytics) can opt in via `basemap="liberty"` on the MapView.
+// Default to Positron — clean vector tiles. Pages that need street detail
+// (routes/analytics) can opt in via `basemap="liberty"` on the MapView.
 export const DEFAULT_BASEMAP: BasemapStyle = "positron";
 
 export function basemapStyleUrl(style: BasemapStyle = DEFAULT_BASEMAP): string {

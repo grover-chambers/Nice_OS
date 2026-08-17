@@ -131,6 +131,38 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       back_checks: {
         Row: {
           business_matches: boolean
@@ -1331,6 +1363,30 @@ export type Database = {
           },
         ]
       }
+      role_definitions: {
+        Row: {
+          can_create_roles: Database["public"]["Enums"]["user_role"][]
+          description: string
+          label: string
+          role: Database["public"]["Enums"]["user_role"]
+          use_cases: string[]
+        }
+        Insert: {
+          can_create_roles?: Database["public"]["Enums"]["user_role"][]
+          description: string
+          label: string
+          role: Database["public"]["Enums"]["user_role"]
+          use_cases?: string[]
+        }
+        Update: {
+          can_create_roles?: Database["public"]["Enums"]["user_role"][]
+          description?: string
+          label?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          use_cases?: string[]
+        }
+        Relationships: []
+      }
       route_stops: {
         Row: {
           created_at: string
@@ -2076,6 +2132,25 @@ export type Database = {
             }
             Returns: string
           }
+      admin_create_user: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_password?: string
+          p_phone?: string
+          p_role?: Database["public"]["Enums"]["user_role"]
+          p_territory_id?: string
+          p_zone?: string
+        }
+        Returns: string
+      }
+      admin_reset_password: {
+        Args: {
+          p_email: string
+          p_password: string
+        }
+        Returns: undefined
+      }
       app_scope: {
         Args: never
         Returns: {
@@ -2953,7 +3028,7 @@ export type Database = {
         | "subcounty"
         | "ward"
         | "sales_territory"
-      user_role: "admin" | "territory_manager" | "sales_rep" | "ceo"
+      user_role: "admin" | "territory_manager" | "sales_rep" | "ceo" | "super_admin"
       visit_status: "completed" | "no-stock" | "closed" | "cancelled" | "missed"
       visit_type:
         | "retail"
@@ -3150,7 +3225,13 @@ export const Constants = {
         "ward",
         "sales_territory",
       ],
-      user_role: ["admin", "territory_manager", "sales_rep", "ceo"],
+      user_role: [
+        "admin",
+        "territory_manager",
+        "sales_rep",
+        "ceo",
+        "super_admin",
+      ],
       visit_status: ["completed", "no-stock", "closed", "cancelled", "missed"],
       visit_type: [
         "retail",

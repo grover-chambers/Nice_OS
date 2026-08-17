@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "NiceOS — Market Activation & Intelligence Platform",
   description:
-    "Internal platform for Market Link Ltd field operations — Nice Millers engagement",
+    "Internal platform for NICE MILLERS LIMITED field operations",
 };
 
 export default function RootLayout({

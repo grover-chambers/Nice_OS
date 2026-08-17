@@ -16,8 +16,8 @@ import {
 } from "recharts";
 import { Activity, AlertTriangle, Store, TrendingUp } from "lucide-react";
 import MapViewWrapper from "@/components/MapViewWrapper";
-import { Card, StatCard, Badge, PageHeader, DemoBanner, Td, Th } from "@/components/ui";
-import { fmtKes, fmtDateTime, fmtNum } from "@/lib/data/mock";
+import { Card, StatCard, Badge, PageHeader, Td, Th } from "@/components/ui";
+import { fmtKes, fmtDateTime, fmtNum } from "@/lib/data/shared";
 import { retailerStatusMeta, zoneColors } from "@/lib/status";
 import type { Retailer, Opportunity, CompetitorObservation, Visit } from "@/lib/data/types";
 
@@ -86,7 +86,7 @@ export default function AnalyticsView({
         title="Market analytics"
         description="Retailer intelligence across coverage, health, churn and competition."
       />
-      <DemoBanner />
+      
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Avg health score" value={avgHealth} icon={<Activity size={16} />} tone="blue" href="/retailers" />

@@ -11,11 +11,11 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Navigation, PhoneCall, Wifi, Clock } from "lucide-react";
-import { Card, Badge, PageHeader, DemoBanner, Progress, Segmented, Td, Th } from "@/components/ui";
-import { fmtKes, fmtNum } from "@/lib/data/mock";
+import { Card, Badge, PageHeader, Progress, Segmented, Td, Th } from "@/components/ui";
+import { fmtKes, fmtNum } from "@/lib/data/shared";
 import { toaster } from "@/components/toast";
 import type { WardZone } from "@/lib/data/types";
-import type { RepManagementRow } from "@/lib/data/mock";
+import type { RepManagementRow } from "@/lib/data/shared";
 
 export default function RepRoster({ rows }: { rows: RepManagementRow[] }) {
   const [zone, setZone] = useState<WardZone | "all">("all");
@@ -28,7 +28,7 @@ export default function RepRoster({ rows }: { rows: RepManagementRow[] }) {
         title="Rep & territory management"
         description="Monthly targets versus actual field activity per sales rep."
       />
-      <DemoBanner />
+      
 
       <div className="mb-4 flex items-center gap-2">
         <Segmented

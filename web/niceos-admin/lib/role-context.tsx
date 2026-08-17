@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { ROLE_CONFIG } from "@/lib/data/mock";
+import { createContext, useContext, useMemo, useState } from "react";
+import { ROLE_CONFIG } from "@/lib/data/shared";
 import type { Role } from "@/lib/data/types";
 
 type RoleContextValue = {
@@ -15,14 +15,8 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>("admin");
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem("niceos-role") as Role | null;
-    if (stored && stored in ROLE_CONFIG) setRoleState(stored);
-  }, []);
-
   const setRole = (r: Role) => {
     setRoleState(r);
-    window.localStorage.setItem("niceos-role", r);
   };
 
   const value = useMemo(

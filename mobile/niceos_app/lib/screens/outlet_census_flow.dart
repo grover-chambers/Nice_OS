@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../domain/typology.dart';
 import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
+import '../providers/retailer_provider.dart';
 import '../services/census_service.dart';
 import '../services/location_service.dart';
 import '../services/photo_service.dart';
@@ -25,14 +26,6 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
   bool _busy = false;
   String? _gpsStatus = 'No GPS fix yet';
   String? _photoPath;
-
-  /// Demo client accounts for the per-client status (§3.3). In production
-  /// these come from the client_accounts table; the model is identical.
-  static const _clients = [
-    ('nice', 'Nice Millers'),
-    ('fresh', 'Fresh Dairies'),
-    ('fresha', 'Fresha (Githunguri)'),
-  ];
 
   final _categoryDrafts = <String, CategoryDraft>{};
 
@@ -81,7 +74,14 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
 
   Future<void> _submit() async {
     setState(() => _busy = true);
-    final repId = context.read<AuthProvider>().currentUser?.id ?? 'demo-rep';
+    // Fail closed: this flow is only reachable when authenticated. A null
+    // session here means the app state is broken — never fall back to a
+    // fake rep id.
+    final repId = context.read<AuthProvider>().currentUser?.id;
+    if (repId == null) {
+      setState(() => _busy = false);
+      throw StateError('Not authenticated — sign in before submitting a census.');
+    }
     try {
       final outlet = await _census.submit(repId);
       if (!mounted) return;
@@ -599,6 +599,9 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
 
   Widget _reviewStep() {
     final d = _draft;
+    // Real client/account data from the backend (retailers table, RLS-scoped
+    // to the signed-in rep). No hardcoded demo accounts.
+    final clients = context.watch<RetailerProvider>().retailers;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -617,25 +620,35 @@ class _OutletCensusFlowState extends State<OutletCensusFlow> {
           subtitle: 'The same outlet can be a customer of one client and a '
               'prospect of another.',
           children: [
-            for (final (id, name) in _clients)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: LabeledDropdown<ClientStatus>(
-                  label: name,
-                  options: ClientStatus.values,
-                  labelFor: (s) => s.label,
-                  value: ClientStatus.fromCode(d.clientStatuses[id]),
-                  nullValue: null,
-                  nullLabel: 'Not applicable',
-                  onChanged: (v) => setState(() {
-                    if (v == null) {
-                      d.clientStatuses.remove(id);
-                    } else {
-                      d.clientStatuses[id] = v.code;
-                    }
-                  }),
+            if (clients.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'No client accounts assigned yet — statuses will appear here '
+                  'once accounts are loaded for your beat.',
+                  style: TextStyle(color: Colors.grey, fontSize: 12.5),
                 ),
-              ),
+              )
+            else
+              for (final client in clients)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: LabeledDropdown<ClientStatus>(
+                    label: client.name,
+                    options: ClientStatus.values,
+                    labelFor: (s) => s.label,
+                    value: ClientStatus.fromCode(d.clientStatuses[client.id]),
+                    nullValue: null,
+                    nullLabel: 'Not applicable',
+                    onChanged: (v) => setState(() {
+                      if (v == null) {
+                        d.clientStatuses.remove(client.id);
+                      } else {
+                        d.clientStatuses[client.id] = v.code;
+                      }
+                    }),
+                  ),
+                ),
           ],
         ),
       ],

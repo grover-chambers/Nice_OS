@@ -57,7 +57,10 @@ jobs:
 
       - name: Build release APK
         working-directory: mobile/niceos_app
-        run: flutter build apk --release
+        # Per-ABI split: the universal APK exceeds Supabase Storage's 50MB
+        # single-object limit; the arm64 build (~20MB) covers virtually all
+        # modern devices and is published as the canonical release artifact.
+        run: flutter build apk --release --split-per-abi
 
       - name: Parse version from pubspec
         id: version
@@ -73,7 +76,7 @@ jobs:
 
       - name: Upload APK to Supabase Storage
         env:
-          APK: mobile/niceos_app/build/app/outputs/flutter-apk/app-release.apk
+          APK: mobile/niceos_app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           OBJ_NAME: niceos-${{ steps.version.outputs.version_name }}.apk
         run: |
           curl -f -X POST \

@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-);
+import { handleCors, json } from "../_shared/cors.ts";
+import { requireUser } from "../_shared/auth.ts";
+import { forwardPendingOrder } from "../_shared/order-forward.ts";
 
 interface OrderLine {
   sku: string;
@@ -16,60 +13,30 @@ interface OrderLine {
 interface OrderIntentPayload {
   retailer_id: string;
   rep_id?: string;
+  rep_name?: string;
+  rep_phone?: string;
   items: OrderLine[];
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
-}
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: corsHeaders });
-  }
+  const cors = handleCors(req);
+  if (cors) return cors;
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return json({ error: "Method not allowed" }, 405);
   }
 
-  // Verify the caller is authenticated. The gateway enforces verify_jwt = true,
-  // but we double-check the Authorization header so the function is safe even if
-  // it is ever exposed without JWT verification.
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const userJwt = authHeader.replace(/^Bearer\s+/i, "");
-  if (!userJwt) {
-    return json({ error: "Missing Authorization header" }, 401);
-  }
-
-  // Build a user-scoped client so we can verify the caller owns rep_id.
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: `Bearer ${userJwt}` } } }
-  );
-  const {
-    data: { user },
-    error: authError,
-  } = await userClient.auth.getUser();
-  if (authError || !user) {
-    return json({ error: "Invalid or expired token" }, 401);
-  }
+  // The gateway enforces verify_jwt = true, but we double-check the token so
+  // the function is safe even if it is ever exposed without JWT verification.
+  const { ctx, error } = await requireUser(req);
+  if (error) return error;
 
   const body = await req.json().catch(() => null);
   if (!body) {
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  const { retailer_id, rep_id, items } = body as OrderIntentPayload;
+  const { retailer_id, rep_id, rep_name, rep_phone, items } =
+    body as OrderIntentPayload;
   if (!retailer_id || !Array.isArray(items) || items.length === 0) {
     return json(
       { error: "Invalid payload: retailer_id + items[] required" },
@@ -97,7 +64,7 @@ serve(async (req) => {
   // If rep_id is provided, verify the caller's profile matches that rep.
   // This stops one rep from creating order_intents attributed to another.
   if (rep_id) {
-    const { data: rep, error: repError } = await supabase
+    const { data: rep, error: repError } = await ctx.db
       .from("reps")
       .select("id")
       .eq("id", rep_id)
@@ -105,17 +72,10 @@ serve(async (req) => {
     if (repError || !rep) {
       return json({ error: "Unknown rep_id" }, 400);
     }
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, role")
-      .eq("auth_id", user.id)
-      .maybeSingle();
-    if (profileError || !profile) {
-      return json({ error: "Caller has no profile" }, 403);
-    }
-    const isOwner = profile.id === rep_id;
-    const isPrivileged = profile.role === "admin" ||
-      profile.role === "territory_manager";
+    const isOwner = ctx.profile.id === rep_id;
+    const isPrivileged = ctx.profile.role === "admin" ||
+      ctx.profile.role === "super_admin" ||
+      ctx.profile.role === "territory_manager";
     if (!isOwner && !isPrivileged) {
       return json(
         { error: "Caller cannot create order intents for another rep" },
@@ -132,7 +92,7 @@ serve(async (req) => {
   };
   if (rep_id) insertPayload.created_by = rep_id;
 
-  const { data: order, error: headerError } = await supabase
+  const { data: order, error: headerError } = await ctx.db
     .from("order_intents")
     .insert(insertPayload)
     .select("id")
@@ -150,14 +110,22 @@ serve(async (req) => {
     price: typeof i.price === "number" && i.price >= 0 ? i.price : 0,
   }));
 
-  const { error: itemsError } = await supabase
+  const { error: itemsError } = await ctx.db
     .from("order_intent_items")
     .insert(lines);
   if (itemsError) {
     // Best-effort rollback of the header row so partial states don't linger.
-    await supabase.from("order_intents").delete().eq("id", order!.id);
+    await ctx.db.from("order_intents").delete().eq("id", order!.id);
     return json({ error: itemsError.message }, 500);
   }
 
-  return json({ success: true, order_intent_id: order!.id, total });
+  // After the order is persisted, forward it to the order handling desk.
+  const forwardStatus = await forwardPendingOrder(ctx.db, order!.id);
+
+  return json({
+    success: true,
+    order_intent_id: order!.id,
+    total,
+    forward_status: forwardStatus,
+  });
 });

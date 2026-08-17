@@ -1,7 +1,7 @@
 import NextDynamic from "next/dynamic";
 import Link from "next/link";
 import { getZoneCoverage, getRetailerCount, getRetailers, getTerritoryHierarchy } from "@/lib/data";
-import { PageHeader, DemoBanner, Progress } from "@/components/ui";
+import { PageHeader, Progress } from "@/components/ui";
 import TerritoryTabs, { type TerritoryTab } from "@/components/territories/TerritoryTabs";
 import TerritoryHierarchy from "@/components/territories/TerritoryHierarchy";
 
@@ -39,7 +39,7 @@ export default async function TerritoriesPage({
         title="Territories"
         description="Nairobi County ward map — IEBC 2019 boundaries, zones, population density and road corridors used for route planning."
       />
-      <DemoBanner />
+      
 
       <TerritoryTabs active={tab} />
 

@@ -13,7 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Card, Badge, PageHeader, Progress, EmptyState } from "@/components/ui";
-import { fmtKes, fmtDateTime } from "@/lib/data/mock";
+import { fmtKes, fmtDateTime } from "@/lib/data/shared";
 import { retailerStatusMeta, visitStatusMeta } from "@/lib/status";
 import { toaster } from "@/components/toast";
 import type { Retailer, Rep, Visit, CompetitorObservation } from "@/lib/data/types";
@@ -83,7 +83,7 @@ export default function RetailerProfileView({
               Schedule visit
             </button>
             <button
-              onClick={() => toaster.success("Order request forwarded to Nice Millers sales office")}
+              onClick={() => toaster.success("Order request forwarded to NICE MILLERS LIMITED order desk")}
               className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
             >
               Forward order

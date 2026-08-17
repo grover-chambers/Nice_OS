@@ -23,11 +23,11 @@ import {
   Users,
 } from "lucide-react";
 import MapViewWrapper from "@/components/MapViewWrapper";
-import { Card, StatCard, Badge, Progress, PageHeader, DemoBanner } from "@/components/ui";
-import { fmtKes, fmtNum } from "@/lib/data/mock";
+import { Card, StatCard, Badge, Progress, PageHeader } from "@/components/ui";
+import { fmtKes, fmtNum } from "@/lib/data/shared";
 import { useRole } from "@/lib/role-context";
 import type { Retailer } from "@/lib/data/types";
-import type { DashboardSummary } from "@/lib/data/mock";
+import type { DashboardSummary } from "@/lib/data/shared";
 
 export default function DashboardView({
   summary,
@@ -67,7 +67,7 @@ export default function DashboardView({
           </Link>
         }
       />
-      <DemoBanner />
+      
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard

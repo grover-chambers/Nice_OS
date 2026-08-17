@@ -4,9 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/retailer_model.dart';
 
 class RetailerProvider extends ChangeNotifier {
-  RetailerProvider({bool demoMode = false}) : _demoMode = demoMode;
+  RetailerProvider();
 
-  final bool _demoMode;
   SupabaseClient? _client;
   List<Retailer> _retailers = [];
   Retailer? _currentRetailer;
@@ -27,11 +26,6 @@ class RetailerProvider extends ChangeNotifier {
   }
 
   Future<void> loadRetailers() async {
-    if (_demoMode) {
-      // Demo mode has no assignment feed — the census captures its own outlets.
-      notifyListeners();
-      return;
-    }
     try {
       final client = _client ??= Supabase.instance.client;
       final response = await client.from('retailers').select();
@@ -45,11 +39,6 @@ class RetailerProvider extends ChangeNotifier {
   }
 
   Future<void> addRetailer(Retailer retailer) async {
-    if (_demoMode) {
-      _retailers.add(retailer);
-      notifyListeners();
-      return;
-    }
     try {
       final client = _client ??= Supabase.instance.client;
       await client.from('retailers').insert(retailer.toJson());
@@ -59,14 +48,6 @@ class RetailerProvider extends ChangeNotifier {
   }
 
   Future<void> updateRetailer(Retailer retailer) async {
-    if (_demoMode) {
-      final index = _retailers.indexWhere((r) => r.id == retailer.id);
-      if (index != -1) {
-        _retailers[index] = retailer;
-        notifyListeners();
-      }
-      return;
-    }
     try {
       final client = _client ??= Supabase.instance.client;
       await client.from('retailers').update(retailer.toJson()).eq('id', retailer.id);
@@ -79,11 +60,6 @@ class RetailerProvider extends ChangeNotifier {
   }
 
   Future<void> deleteRetailer(String id) async {
-    if (_demoMode) {
-      _retailers.removeWhere((r) => r.id == id);
-      notifyListeners();
-      return;
-    }
     try {
       final client = _client ??= Supabase.instance.client;
       await client.from('retailers').delete().eq('id', id);

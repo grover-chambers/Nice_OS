@@ -28,7 +28,14 @@ class _SubmissionsScreenState extends State<SubmissionsScreen> {
     final census = context.read<CensusProvider>();
     final intercepts = context.read<InterceptProvider>();
     final submissions = context.read<SubmissionProvider>();
-    final repId = context.read<AuthProvider>().currentUser?.id ?? 'demo-rep';
+    // Fail closed: this screen is only reachable when authenticated. A null
+    // session here means the app state is broken — never fall back to a
+    // fake rep id.
+    final repId = context.read<AuthProvider>().currentUser?.id;
+    if (repId == null) {
+      setState(() => _closing = false);
+      throw StateError('Not authenticated — sign in before closing the day.');
+    }
 
     final rows = census.capturedOutlets.map((o) => o.toJson()).toList();
 

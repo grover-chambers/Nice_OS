@@ -5,7 +5,6 @@ import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/submission_provider.dart';
-import '../services/update_service.dart';
 import '../theme/brand.dart';
 import 'census_screen.dart';
 import 'dashboard_screen.dart';
@@ -36,7 +35,8 @@ class _HomeShellState extends State<HomeShell> {
       context.read<CensusProvider>().init();
       context.read<InterceptProvider>().init();
       context.read<SubmissionProvider>().init();
-      updateService.promptIfAvailable(context);
+      // Update check now lives on the dashboard (landing tab) so the alert is
+      // surfaced there — see DashboardScreen.
     });
   }
 
@@ -69,10 +69,13 @@ class _HomeShellState extends State<HomeShell> {
       drawer: _MenuDrawer(
         onQuickSubmission: () => _goTo(0),
         onQuickCensus: () => _goTo(1),
+        onQuickIntercept: () => _goTo(3),
         onQuickCompetitor: () {
           _goTo(4);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Open a visit to capture competitor activity.')),
+            const SnackBar(
+              content: Text('Open a stop to check in — competitor activity is captured inside a visit.'),
+            ),
           );
         },
         onShift: () => Navigator.push(
@@ -86,12 +89,12 @@ class _HomeShellState extends State<HomeShell> {
       ),
       body: IndexedStack(
         index: _index,
-        children: const [
-          SubmissionsScreen(),
-          CensusScreen(),
-          DashboardScreen(),
-          InterceptScreen(),
-          VisitsScreen(),
+        children: [
+          const SubmissionsScreen(),
+          const CensusScreen(),
+          DashboardScreen(onNavigate: _goTo),
+          const InterceptScreen(),
+          const VisitsScreen(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -238,12 +241,14 @@ class _NavItem extends StatelessWidget {
 class _MenuDrawer extends StatelessWidget {
   final VoidCallback onQuickSubmission;
   final VoidCallback onQuickCensus;
+  final VoidCallback onQuickIntercept;
   final VoidCallback onQuickCompetitor;
   final VoidCallback onShift;
   final VoidCallback onProfile;
   const _MenuDrawer({
     required this.onQuickSubmission,
     required this.onQuickCensus,
+    required this.onQuickIntercept,
     required this.onQuickCompetitor,
     required this.onShift,
     required this.onProfile,
@@ -292,6 +297,7 @@ class _MenuDrawer extends StatelessWidget {
             ),
             _DrawerTile(icon: Icons.fact_check_outlined, label: 'Quick submission', onTap: onQuickSubmission),
             _DrawerTile(icon: Icons.storefront_outlined, label: 'Quick census', onTap: onQuickCensus),
+            _DrawerTile(icon: Icons.people_outline, label: 'Quick intercept', onTap: onQuickIntercept),
             _DrawerTile(icon: Icons.local_offer_outlined, label: 'Quick competitor capture', onTap: onQuickCompetitor),
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 20, 20, 6),

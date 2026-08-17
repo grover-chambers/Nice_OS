@@ -2,11 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseUrl, supabaseAnonKey, supabaseConfigured } from "@/lib/supabase/config";
 
-// Routes that require a Supabase auth session. Without this middleware anyone
-// hitting /dashboard/* directly bypasses auth and lands on the demo facade.
-// The facade itself only contains fixture data, so this is defense-in-depth;
-// the day the facade swaps to live Supabase reads, RLS will scope rows to the
-// real authenticated user.
+// Routes that require a Supabase auth session. The app is fail-closed: without
+// Supabase configured there is no demo facade, so protected routes redirect to
+// a hard configuration error page instead of serving placeholder data.
 const PROTECTED_PREFIXES = ["/dashboard", "/alerts", "/analytics", "/census", "/rep-management",
   "/reports", "/retailers", "/routes", "/settings", "/territories", "/users", "/visits", "/client"];
 
@@ -17,9 +15,13 @@ export async function middleware(req: NextRequest) {
   );
   if (!isProtected) return NextResponse.next();
 
-  // If Supabase isn't configured (demo build), allow through — LoginForm
-  // already shows the explicit "Explore demo dashboard" path.
-  if (!supabaseConfigured) return NextResponse.next();
+  // Fail closed: no Supabase config → hard error page. Never serve placeholder data.
+  if (!supabaseConfigured) {
+    const errorUrl = req.nextUrl.clone();
+    errorUrl.pathname = "/config-error";
+    errorUrl.search = "";
+    return NextResponse.rewrite(errorUrl);
+  }
 
   const res = NextResponse.next();
 
@@ -57,6 +59,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|login|map|api|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|map|api|config-error|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)",
   ],
 };

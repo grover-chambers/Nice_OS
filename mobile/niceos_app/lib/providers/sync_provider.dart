@@ -15,11 +15,11 @@ import '../services/sync_service.dart';
 const Duration kAutoFlushInterval = Duration(seconds: 45);
 
 class SyncProvider extends ChangeNotifier {
-  SyncProvider({bool demoMode = false}) : _demoMode = demoMode {
+  SyncProvider() {
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final online = results != ConnectivityResult.none;
       _online = online;
-      if (online && !_demoMode) {
+      if (online) {
         flush();
       } else {
         notifyListeners();
@@ -27,7 +27,7 @@ class SyncProvider extends ChangeNotifier {
     });
 
     _autoTimer = Timer.periodic(kAutoFlushInterval, (_) {
-      if (!_demoMode && _online && _syncing == false) {
+      if (_online && _syncing == false) {
         flush();
       }
     });
@@ -43,17 +43,29 @@ class SyncProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  final bool _demoMode;
   final SupabaseService _supabase = SupabaseService.instance;
   final _uuid = const Uuid();
 
   bool _online = true;
   bool _syncing = false;
   String _deviceId = '';
+  String? _lastSyncError;
 
   bool get isOnline => _online;
   bool get isSyncing => _syncing;
   int get pendingCount => syncService.pendingCount;
+
+  /// Human-readable reason for the most recent failed flush. Null when the
+  /// last flush succeeded (or nothing was pending).
+  String? get lastSyncError => _lastSyncError;
+  bool get hasSyncErrors => _lastSyncError != null;
+
+  /// Clears the visible error state (e.g. after the rep dismisses it).
+  void clearSyncError() {
+    if (_lastSyncError == null) return;
+    _lastSyncError = null;
+    notifyListeners();
+  }
 
   Future<String> _getDeviceId() async {
     if (_deviceId.isNotEmpty) return _deviceId;
@@ -67,20 +79,17 @@ class SyncProvider extends ChangeNotifier {
     return id;
   }
 
+  /// Flush the local queue to the server. Failures are NEVER silent: the
+  /// error is kept in [lastSyncError] (visible in the UI) and the failed
+  /// entries stay queued for a retry via [forceSync].
   Future<void> flush() async {
     if (_syncing) return;
     if (!_online) return;
     _syncing = true;
     notifyListeners();
     try {
-      if (_demoMode) {
-        // Demo mode keeps everything in the local queue; a supervisor could
-        // export the pending rows without a live backend.
-        await Future.delayed(const Duration(milliseconds: 100));
-        return;
-      }
       final deviceId = await _getDeviceId();
-      await syncService.flush(onPush: (entity, rows) async {
+      final result = await syncService.flush(onPush: (entity, rows) async {
         final res = await _supabase.pushSync(deviceId: deviceId, batch: [
           {'entity': entity, 'rows': rows},
         ]);
@@ -90,14 +99,44 @@ class SyncProvider extends ChangeNotifier {
         return res is Map ? Map<String, dynamic>.from(res) : {'applied': 0};
       });
       await syncService.purgeSynced();
-    } catch (_) {
-      // Network or auth failure — entries stay queued for the next flush.
+
+      final error = _firstFlushError(result);
+      if (error != null) {
+        _lastSyncError = error;
+      } else {
+        _lastSyncError = null;
+      }
+    } catch (e) {
+      // Network, auth or edge-function failure — entries stay queued and the
+      // failure is surfaced so the rep knows the queue did NOT clear.
+      _lastSyncError = 'Sync failed: $e';
     } finally {
       _syncing = false;
       notifyListeners();
     }
   }
-  Future<void> forceSync() => flush();
-}
 
-final SyncProvider syncProvider = SyncProvider();
+  /// Retry a failed flush. Kept as an explicit entry point so UI affordances
+  /// ("Retry") read clearly; it is the same code path as [flush].
+  Future<void> retry() => flush();
+
+  Future<void> forceSync() => flush();
+
+  /// Scans a flush result for the first failure worth showing: a top-level
+  /// transport error or any entity whose server response carried an `error`.
+  String? _firstFlushError(Map<String, dynamic> result) {
+    if (result['error'] != null) {
+      return 'Sync failed: ${result['error']}';
+    }
+    final applied = result['applied'];
+    if (applied is Map) {
+      for (final entry in applied.entries) {
+        final res = entry.value;
+        if (res is Map && res['error'] != null) {
+          return 'Sync failed for ${entry.key}: ${res['error']}';
+        }
+      }
+    }
+    return null;
+  }
+}
