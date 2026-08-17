@@ -60,7 +60,9 @@ jobs:
         # Per-ABI split: the universal APK exceeds Supabase Storage's 50MB
         # single-object limit; the arm64 build (~20MB) covers virtually all
         # modern devices and is published as the canonical release artifact.
-        run: flutter build apk --release --split-per-abi
+        # --dart-define-from-file bakes the Supabase config into the binary;
+        # the app also bundles .env (asset) for dotenv-based builds.
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=.env
 
       - name: Parse version from pubspec
         id: version

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Plus, ShieldCheck, UserPlus } from "lucide-react";
 import { Card, Badge, PageHeader, Td, Th } from "@/components/ui";
-import { ZONES } from "@/lib/data/shared";
+import { CLUSTERS } from "@/lib/data/shared";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { toaster } from "@/components/toast";
 import type { Database } from "@/lib/database.types";
@@ -204,7 +204,7 @@ function AddUserModal({
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<Profile["role"]>(creatableRoles[0] ?? "sales_rep");
-  const [zone, setZone] = useState(currentZone ?? "Kiambu");
+  const [zone, setZone] = useState(currentZone ?? CLUSTERS[0]);
   const [territoryId, setTerritoryId] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -290,7 +290,7 @@ function AddUserModal({
               onChange={(e) => setZone(e.target.value)}
               className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-100 disabled:text-slate-500"
             >
-              {ZONES.map((z) => (
+              {CLUSTERS.map((z) => (
                 <option key={z} value={z}>
                   {z}
                 </option>

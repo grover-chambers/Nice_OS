@@ -6,6 +6,7 @@ import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
+import '../data/field_guide.dart';
 import '../theme/brand.dart';
 import '../widgets/warm.dart';
 
@@ -49,6 +50,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
           title: 'Jambo, ${auth.displayName.split(' ').first}',
           subtitle: 'Your mission and objectives for today.',
         ),
+        // Cluster strip: where the rep works and the number they are held to.
+        if (auth.currentUser?.zone case final zone? when kClusters.containsKey(zone))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: WarmCard(
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Brand.amber.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      kClusters[zone]!.code,
+                      style: const TextStyle(
+                        color: Brand.amberDeep,
+                        fontFamily: Brand.fontMono,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          zone,
+                          style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 14),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${kRepNumbers.outletsPerDay} outlets/day · lead: ${kClusters[zone]!.lead}',
+                          style: const TextStyle(color: Brand.inkSoft, fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         if (sync.hasSyncErrors) _SyncErrorBanner(sync: sync),
         // Mission / objective banner
         Padding(

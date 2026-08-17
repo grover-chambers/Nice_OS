@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../data/field_guide.dart';
 import '../providers/auth_provider.dart';
 import '../providers/census_provider.dart';
 import '../providers/intercept_provider.dart';
 import '../providers/sync_provider.dart';
 import '../theme/brand.dart';
 import '../widgets/warm.dart';
+import 'field_guide_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -99,6 +101,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            // Cluster card: where the rep works, who leads them, their number.
+            if (auth.currentUser?.zone case final zone? when kClusters.containsKey(zone)) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: WarmCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Brand.amber.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              kClusters[zone]!.code,
+                              style: const TextStyle(
+                                color: Brand.amberDeep,
+                                fontFamily: Brand.fontMono,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              zone,
+                              style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 15),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _GuideLine('Lead', kClusters[zone]!.lead),
+                      const SizedBox(height: 6),
+                      _GuideLine('Target', '${kRepNumbers.outletsPerDay} outlets/day · ${kRepNumbers.perWave} per wave'),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'YOUR AREAS',
+                        style: TextStyle(
+                          color: Brand.inkSoft,
+                          fontFamily: Brand.fontMono,
+                          fontSize: 9.5,
+                          letterSpacing: 0.12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final area in kClusters[zone]!.areas)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Brand.ink.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Brand.line),
+                              ),
+                              child: Text(area, style: const TextStyle(color: Brand.ink, fontSize: 11)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             // Details
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -111,6 +187,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _ProfileRow(keyLabel: 'App', value: _version),
+            ),
+            // Field guide
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: WarmCard(
+                child: InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FieldGuideScreen()),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.menu_book_outlined, color: Brand.amberDeep, size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Field Guide',
+                            style: TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 14.5),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
             // Log out
             Padding(
@@ -148,6 +253,37 @@ class _ProfileRow extends StatelessWidget {
           Text(value, style: const TextStyle(fontFamily: Brand.fontMono, fontWeight: FontWeight.w700, color: Brand.ink)),
         ],
       ),
+    );
+  }
+}
+
+class _GuideLine extends StatelessWidget {
+  final String label;
+  final String value;
+  const _GuideLine(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 58,
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: Brand.inkSoft,
+              fontFamily: Brand.fontMono,
+              fontSize: 9.5,
+              letterSpacing: 0.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(value, style: const TextStyle(color: Brand.ink, fontSize: 13, fontWeight: FontWeight.w600)),
+        ),
+      ],
     );
   }
 }

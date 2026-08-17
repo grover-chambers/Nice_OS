@@ -28,6 +28,20 @@ export const ZONES: WardZone[] = [
   "Kajiado",
 ];
 
+// --- Market Link clusters ---------------------------------------------------
+// The five census territories of the Market Link (Playmax x Nice Millers)
+// programme. Reps and cluster leads are assigned to these; ward-level geo
+// data above remains keyed by ZONES.
+export const CLUSTERS = [
+  "Central & CBD",
+  "Northern Belt",
+  "Eastern Corridor",
+  "South & West",
+  "Thika",
+] as const;
+
+export type Cluster = (typeof CLUSTERS)[number];
+
 // --- tiny utils -------------------------------------------------------------
 
 export const fmtKes = (n: number) =>

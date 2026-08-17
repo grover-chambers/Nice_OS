@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Link — Field Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#10152B; --grey:#4C5466; --rule:#C7CEDA; --paper:#FFFFFF; --wash:#F2F4F8;
+  --violet:#6B4FD8; --violetd:#4E35AC; --gold:#C98A16;
+  --c1:#B33A30; --c2:#0A6B62; --c3:#8A5E08; --c4:#24539F; --t1:#4E35AC;
+  --disp:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#DDE2EA;font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased;padding:22px 14px 60px}
+.sheet{max-width:1000px;margin:0 auto;background:var(--paper);padding:34px 32px 40px;
+  box-shadow:0 1px 0 var(--rule),0 18px 50px rgba(16,21,43,.13)}
+
+/* ---------- masthead ---------- */
+.mast{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;
+  border-bottom:3px solid var(--ink);padding-bottom:14px}
+.brand{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.24em;color:var(--violetd);text-transform:uppercase}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6.4vw,50px);letter-spacing:-.028em;line-height:.94;margin-top:6px}
+.sub{font-size:14px;color:var(--grey);margin-top:8px;max-width:46ch;line-height:1.45}
+.stamp{font-family:var(--mono);font-size:10.5px;line-height:1.75;color:var(--grey);text-align:right;white-space:nowrap}
+.stamp b{color:var(--ink);font-weight:600}
+
+/* ---------- section heads ---------- */
+.sec{margin-top:34px}
+.sechd{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--rule);padding-bottom:7px;margin-bottom:16px}
+.sechd h2{font-family:var(--disp);font-weight:800;font-size:17px;letter-spacing:-.01em;text-transform:uppercase}
+.sechd span{font-family:var(--mono);font-size:10.5px;color:var(--grey);letter-spacing:.05em}
+
+/* ---------- cluster cards ---------- */
+.clusters{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px}
+.cl{border:1px solid var(--rule);border-top:5px solid var(--k);background:var(--wash);padding:13px 13px 14px;display:flex;flex-direction:column}
+.cl .code{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--k);letter-spacing:.09em}
+.cl .name{font-family:var(--disp);font-weight:800;font-size:16px;line-height:1.12;margin-top:5px;letter-spacing:-.015em}
+.cl .who{margin-top:10px;padding-top:9px;border-top:1px dashed var(--rule);font-size:12px;line-height:1.6}
+.cl .who b{font-weight:600}
+.cl .who i{font-style:normal;color:#5D6578;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;display:block;text-transform:uppercase}
+.cl .areas{margin-top:10px;font-size:11.5px;line-height:1.5;color:#3E4658}
+.cl.base{background:#F0EDFC;border-color:#C9BDF3}
+
+.note{margin-top:14px;border-left:4px solid var(--gold);background:#FDF7EA;padding:11px 14px;font-size:13px;line-height:1.55}
+.note b{font-weight:600}
+
+/* ---------- day tape ---------- */
+.tape{margin-top:4px;border:1px solid var(--rule);background:var(--wash);padding:16px 16px 6px}
+.tapebar{position:relative;height:26px;background:
+  repeating-linear-gradient(90deg,var(--ink) 0 1px,transparent 1px 100%) 0 0/ calc(100%/24) 9px no-repeat,
+  linear-gradient(var(--ink),var(--ink)) 0 100%/100% 2px no-repeat;
+  opacity:.85}
+.slots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}
+.slot{border-top:3px solid var(--ink)}
+.slot.work{border-top-color:var(--violetd)}
+.slot .t{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:7px}
+.slot .l{font-size:11.5px;line-height:1.45;color:#3E4658;margin-top:3px}
+.slot .q{font-family:var(--disp);font-weight:800;font-size:19px;color:var(--violetd);margin-top:6px;letter-spacing:-.02em}
+
+/* ---------- rules ---------- */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 26px}
+.rule{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule)}
+.rule .n{font-family:var(--disp);font-weight:800;font-size:22px;color:var(--violetd);opacity:.55;line-height:1;min-width:26px;letter-spacing:-.03em}
+.rule p{font-size:12.5px;line-height:1.5}
+.rule p b{font-weight:600}
+
+/* ---------- record ---------- */
+.rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.rec div{border:1px solid var(--rule);padding:9px 10px;font-size:11.5px;line-height:1.4}
+.rec div b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;color:var(--violetd);text-transform:uppercase;margin-bottom:4px;font-weight:600}
+
+/* ---------- numbers ---------- */
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.nums div{border:1px solid var(--rule);padding:13px}
+.nums .v{font-family:var(--disp);font-weight:800;font-size:clamp(24px,4.4vw,34px);letter-spacing:-.035em;line-height:1}
+.nums .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#4C5466;margin-top:7px;line-height:1.45}
+
+/* ---------- ladder ---------- */
+.lad{border-collapse:collapse;width:100%;font-size:12.5px}
+.lad td{border-bottom:1px solid var(--rule);padding:9px 10px 9px 0;vertical-align:top;line-height:1.45}
+.lad td:first-child{font-family:var(--mono);font-size:11px;font-weight:600;white-space:nowrap;width:92px;color:var(--violetd)}
+.lad td:last-child{color:#5D6578;text-align:right;white-space:nowrap;padding-right:0}
+
+.foot{margin-top:30px;padding-top:12px;border-top:3px solid var(--ink);display:flex;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#4C5466;text-transform:uppercase}
+
+@media (max-width:620px){
+  body{padding:10px 6px 40px}
+  .sheet{padding:22px 18px 30px}
+  .stamp{text-align:left}
+  .slots{grid-template-columns:repeat(2,1fr);gap:14px 8px}
+  .tapebar{display:none}
+}
+@media print{
+  body{background:#fff;padding:0}
+  .sheet{box-shadow:none;max-width:none;padding:0}
+  .sec{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="mast">
+    <div>
+      <div class="brand">Market Link · Playmax</div>
+      <h1>Field Brief</h1>
+      <p class="sub">Retail outlet census for Nice Millers Ltd. Carry this. Everything you need to run a coverage day is on this sheet.</p>
+    </div>
+    <div class="stamp">
+      <b>ISSUE</b> v2.0 · 13 Aug 2026<br>
+      <b>WAVE 1</b> 24 Aug – 25 Sep<br>
+      <b>WAVE 2</b> 28 Sep – 30 Oct<br>
+      <b>LEAD</b> Laban Mwangi
+    </div>
+  </div>
+
+  <!-- clusters -->
+  <div class="sec">
+    <div class="sechd"><h2>Your cluster</h2><span>5 clusters · 2 officers each · Wave 1 territory</span></div>
+    <div class="clusters">
+      <div class="cl" style="--k:var(--c1)">
+        <div class="code">ML·C1</div>
+        <div class="name">Central &amp; CBD</div>
+        <div class="who"><i>Lead</i><b>To confirm</b><i style="margin-top:7px">Enumerator</i>Willys Munyanga</div>
+        <div class="areas">CBD · River Road · Gikomba · Kamukunji · Eastleigh · Huruma · Mathare · Korogocho · Dandora</div>
+      </div>
+      <div class="cl" style="--k:var(--c2)">
+        <div class="code">ML·C2</div>
+        <div class="name">Northern Belt</div>
+        <div class="who"><i>Lead</i><b>Martin Mutuku</b><i style="margin-top:7px">Enumerator</i>Nelius</div>
+        <div class="areas">Kasarani · Githurai 44 &amp; 45 · Mwiki · Zimmerman · Roysambu · Kahawa West, Sukari &amp; Wendani · Kiambu Rd</div>
+      </div>
+      <div class="cl" style="--k:var(--c3)">
+        <div class="code">ML·C3</div>
+        <div class="name">Eastern Corridor</div>
+        <div class="who"><i>Lead</i><b>Nicole Githui</b><i style="margin-top:7px">Enumerator</i>Evans Mutune</div>
+        <div class="areas">Jogoo Rd · Buruburu · Umoja · Kayole · Komarock · Donholm · Njiru · Chokaa · Utawala · Mihang'o</div>
+      </div>
+      <div class="cl" style="--k:var(--c4)">
+        <div class="code">ML·C4</div>
+        <div class="name">South &amp; West</div>
+        <div class="who"><i>Lead</i><b>Raphael Kenyatta</b><i style="margin-top:7px">Enumerator</i>Erick Kyalo</div>
+        <div class="areas">Pipeline · Embakasi · Tassia · South B &amp; C · Lang'ata · Kibra · Dagoretti · Kawangware · Westlands · Kangemi</div>
+      </div>
+      <div class="cl base" style="--k:var(--t1)">
+        <div class="code">ML·T1 — REGIONAL BASE</div>
+        <div class="name">Thika</div>
+        <div class="who"><i>Lead</i><b>Sophie Mbaika</b><i style="margin-top:7px">Enumerator</i>Peter Owuor</div>
+        <div class="areas">Thika Town · Makongeni · Ngoingwa · Kiganjo · Landless · Witeithie · Juja · Kalimoni · Ruiru · Kimbo · Membley</div>
+      </div>
+    </div>
+    <div class="note"><b>Thika works differently.</b> T1 is a resident base, not a route sweep. Start and end every day in Thika Town and run one spoke at a time — Superhighway, Garissa Road, Gatundu, Kilimambogo. Register wholesalers before dukas: in Thika the flour trade concentrates through a few wholesale points, and knowing them explains the shelf. Schedule market towns on their market day.</div>
+  </div>
+
+  <!-- day -->
+  <div class="sec">
+    <div class="sechd"><h2>The coverage day</h2><span>Mon–Thu coverage · Fri review, revisits and sync</span></div>
+    <div class="tape">
+      <div class="tapebar"></div>
+      <div class="slots">
+        <div class="slot"><div class="t">07:30</div><div class="l">Morning brief — area, split, target</div></div>
+        <div class="slot work"><div class="t">08:00–13:00</div><div class="l">Block A · one side out, other side back</div><div class="q">16–22</div></div>
+        <div class="slot"><div class="t">13:00</div><div class="l">Break + post your running count</div></div>
+        <div class="slot work"><div class="t">13:45–17:00</div><div class="l">Block B · last hour for morning misses</div><div class="q">10–16</div></div>
+        <div class="slot"><div class="t">17:00</div><div class="l">Evening report — captured, closed, refused, synced</div></div>
+        <div class="slot"><div class="t">17:30</div><div class="l">Lead posts cluster tally</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- numbers -->
+  <div class="sec">
+    <div class="sechd"><h2>The numbers you are held to</h2><span>Per officer, per coverage day</span></div>
+    <div class="nums">
+      <div><div class="v">30</div><div class="k">Outlets / day<br>target</div></div>
+      <div><div class="v">20–40</div><div class="k">Working band</div></div>
+      <div><div class="v">600</div><div class="k">Per officer<br>per wave</div></div>
+      <div><div class="v">6,000</div><div class="k">Team total<br>per wave</div></div>
+      <div><div class="v">10,000<span style="font-size:.6em">+</span></div><div class="k">Programme<br>commitment</div></div>
+    </div>
+    <div class="note"><b>The margin is thin.</b> At 26 outlets a day instead of 30 the programme misses its number. That is why the midday count exists — it catches a slow day while there is still afternoon left to fix it.</div>
+  </div>
+
+  <!-- record -->
+  <div class="sec">
+    <div class="sechd"><h2>What a complete record carries</h2><span>Miss any field and the record is incomplete</span></div>
+    <div class="rec">
+      <div><b>Location</b>GPS pin captured at the door</div>
+      <div><b>Identity</b>Outlet name and type — duka, kiosk, mini-market, supermarket, wholesaler, eatery, posho mill</div>
+      <div><b>Contact</b>Owner or manager name, working phone number</div>
+      <div><b>Proof</b>Shopfront photo, signage legible</div>
+      <div><b>Shelf</b>Flour brands stocked and facings — Nice, Unga, Pembe, Capwell, other</div>
+      <div><b>Volume</b>Monthly flour offtake, in bales</div>
+      <div><b>Supply</b>Who supplies them — distributor, wholesaler or direct</div>
+      <div><b>Landmark</b>Nearest landmark, street or estate name written out</div>
+    </div>
+  </div>
+
+  <!-- rules -->
+  <div class="sec">
+    <div class="sechd"><h2>Seven rules</h2><span>Non-negotiable · the registry is the asset</span></div>
+    <div class="rules">
+      <div class="rule"><div class="n">1</div><p><b>No pin, no record.</b> An outlet without GPS does not count toward your day.</p></div>
+      <div class="rule"><div class="n">2</div><p><b>No photo, no record.</b> The shopfront photo is how we verify the visit happened.</p></div>
+      <div class="rule"><div class="n">3</div><p><b>Pin at the door.</b> Never from the matatu, the next shop, or the end of the street.</p></div>
+      <div class="rule"><div class="n">4</div><p><b>Closed and refused are data.</b> Log them with the reason and revisit on Friday. Never skip silently.</p></div>
+      <div class="rule"><div class="n">5</div><p><b>Two pins inside 15 metres get flagged.</b> Ian runs the check Wednesday and Friday. Your lead clears flags before Monday.</p></div>
+      <div class="rule"><div class="n">6</div><p><b>Leads spot-check 10% daily.</b> Physically revisit two or three outlets and confirm the record matches the shop.</p></div>
+      <div class="rule"><div class="n">7</div><p><b>Everything syncs by 18:00.</b> No offline backlog past 24 hours. A dead device is a kit problem, not a data excuse.</p></div>
+    </div>
+  </div>
+
+  <!-- escalation -->
+  <div class="sec">
+    <div class="sechd"><h2>When something goes wrong</h2><span>Escalate early · never freelance</span></div>
+    <table class="lad">
+      <tr><td>SAFETY</td><td>Refused access, hostility, or anything that feels unsafe — stop work in that area.</td><td>Lead, then Laban · now</td></tr>
+      <tr><td>AUTHORITY</td><td>Police, county askari, or a permit challenge.</td><td>Laban direct · now</td></tr>
+      <tr><td>KIT</td><td>Device, app or sync failure.</td><td>Ian, then Brian · same day</td></tr>
+      <tr><td>PACE</td><td>Cluster running more than 15% below target.</td><td>Laban · same day</td></tr>
+      <tr><td>SCOPE</td><td>Asked to cover an area outside your cluster.</td><td>Laban · before you work it</td></tr>
+      <tr><td>LEAD</td><td>A wholesaler or large retailer shows commercial interest.</td><td>Laban · within 24 hrs</td></tr>
+    </table>
+  </div>
+
+  <div class="foot">
+    <span>Market Link — a Playmax project</span>
+    <span>Daily reporting · Programme WhatsApp group</span>
+    <span>Confidential — not for circulation</span>
+  </div>
+
+</div>
+</body>
+</html>

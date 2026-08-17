@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Link — Field Officer Sheet · Evans Mutune</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E1326; --grey:#4C5466; --rule:#C7CEDA; --paper:#E9ECF2; --card:#FFFFFF;
+  --gold:#8A5E08; --red:#9C2F24;
+  --disp:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;padding-bottom:70px}
+.wrap{max-width:1020px;margin:0 auto;padding:0 20px}
+
+.hd{background:var(--kd);color:#fff;padding:24px 0 30px}
+.hd .top{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.92;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.25)}
+.hd .code{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.96;margin-top:22px}
+.hd h1{font-family:var(--disp);font-weight:800;font-size:clamp(32px,7.4vw,58px);letter-spacing:-.032em;line-height:.95;margin-top:8px}
+.hd .terr{font-family:var(--disp);font-weight:600;font-size:clamp(16px,3.4vw,22px);margin-top:6px;letter-spacing:-.015em}
+.hd .char{font-size:14.5px;margin-top:16px;max-width:62ch;line-height:1.6}
+.hd .char b{font-weight:600}
+.hdm{display:flex;gap:26px;flex-wrap:wrap;margin-top:24px;padding-top:18px;border-top:1px solid rgba(255,255,255,.25)}
+.hdm div{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;opacity:.94}
+.hdm div b{display:block;font-family:var(--disp);font-size:22px;letter-spacing:-.025em;opacity:1;margin-bottom:4px;text-transform:none;font-weight:800}
+
+.sec{margin-top:38px}
+.sechd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:15px;border-bottom:2px solid var(--ink);padding-bottom:7px}
+.sechd h2{font-family:var(--disp);font-weight:800;font-size:clamp(18px,3.3vw,24px);letter-spacing:-.024em}
+.sechd span{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--kd);font-weight:600}
+
+/* day clock */
+.day{background:var(--card);border:1px solid var(--rule);padding:0}
+.slot{display:grid;grid-template-columns:112px 1fr;gap:0;border-top:1px solid var(--rule)}
+.slot:first-child{border-top:none}
+.slot .t{background:#F2F4F8;padding:13px 12px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--kd);border-right:1px solid var(--rule)}
+.slot .b{padding:13px 14px}
+.slot .b h4{font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:-.012em}
+.slot .b p{font-size:12.5px;color:var(--grey);margin-top:4px;line-height:1.5}
+.slot.big{background:#FBFCFD}
+.slot.big .b h4{color:var(--kd)}
+.slot .b .q{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;background:var(--kd);color:#fff;padding:2px 8px;margin-top:8px;letter-spacing:.05em}
+
+/* week strip */
+.week{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.week div{background:var(--card);padding:13px}
+.week .d{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--kd)}
+.week .m{font-family:var(--disp);font-weight:800;font-size:14px;margin-top:5px;letter-spacing:-.012em}
+.week .x{font-size:11.5px;color:var(--grey);margin-top:5px;line-height:1.45}
+.week .off{background:#F2F4F8}
+.week .off .d{color:var(--grey)}
+
+/* script block */
+.script{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--kd);padding:17px 19px}
+.script .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--kd)}
+.script blockquote{font-family:var(--disp);font-weight:600;font-size:clamp(15px,2.8vw,19px);line-height:1.5;margin-top:10px;letter-spacing:-.012em}
+.script .after{font-size:12.5px;color:var(--grey);margin-top:11px;line-height:1.55}
+
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:14px;margin-top:14px}
+.dobox{background:var(--card);border:1px solid var(--rule);padding:16px}
+.dobox h3{font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:-.015em;display:flex;gap:8px;align-items:baseline}
+.dobox h3 em{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.1em}
+.dobox.good h3 em{color:#0A6B62}
+.dobox.bad h3 em{color:var(--red)}
+.dobox ul{list-style:none;margin-top:10px}
+.dobox li{font-size:12.5px;line-height:1.5;padding:7px 0 7px 20px;border-top:1px solid var(--rule);position:relative}
+.dobox li:first-child{border-top:none}
+.dobox.good li:before{content:"+";position:absolute;left:2px;top:7px;font-family:var(--mono);font-weight:600;color:#0A6B62}
+.dobox.bad li:before{content:"\00d7";position:absolute;left:2px;top:7px;font-family:var(--mono);font-weight:600;color:var(--red)}
+
+/* record grid */
+.rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.rec div{background:var(--card);padding:12px}
+.rec h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--kd);font-weight:600}
+.rec p{font-size:12px;margin-top:5px;line-height:1.45}
+
+/* fallbacks */
+.fb{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--rule);font-size:12.5px}
+.fb th{background:var(--ink);color:#fff;text-align:left;padding:9px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.fb td{padding:10px 12px;border-top:1px solid var(--rule);vertical-align:top;line-height:1.45}
+.fb td:first-child{font-weight:600;width:33%}
+
+.warn{border-left:4px solid var(--gold);background:#FDF7EA;padding:14px 16px;margin-top:14px}
+.warn .t{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.warn p{font-size:13px;margin-top:7px;line-height:1.55}
+.warn p b{font-weight:600}
+
+.cad{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--rule);font-size:12.5px}
+.cad td{padding:10px 12px;border-top:1px solid var(--rule);line-height:1.45}
+.cad tr:first-child td{border-top:none}
+.cad td:first-child{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--kd);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;width:112px}
+
+.foot{margin-top:40px;padding-top:14px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey)}
+
+@media (max-width:620px){
+  .hd h1{font-size:36px}
+  .slot{grid-template-columns:88px 1fr}
+  .slot .t{padding:11px 8px;font-size:10px}
+}
+@media print{ body{background:#fff} .sec{break-inside:avoid} }
+</style>
+</head>
+<body style="--k:#C98A16;--kd:#8A5E08">
+
+<header class="hd">
+  <div class="wrap">
+    <div class="top"><span>Market Link · Playmax</span><span>Field Officer Sheet · v1.0 · 13 Aug 2026</span></div>
+    <div class="code">ML·C3 · Field Officer · Reports to Nicole Githui · C3</div>
+    <h1>Evans Mutune</h1>
+    <div class="terr">Eastern Corridor</div>
+    <p class="char">Eastlands holds more small outlets per street than anywhere else you will work. <b>Your risk is not finding shops — it is counting the same shop twice.</b> Work one side of the street all the way out, then the other side all the way back. Never criss-cross. In Utawala and Mihang’o the estates are new and shops open every month, so ask how long they have been open.</p>
+    <div class="hdm">
+      <div><b>30</b>Outlets a day</div>
+      <div><b>6</b>Days a week</div>
+      <div><b>720</b>Your wave target</div>
+      <div><b>1,440</b>Your programme total</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="sec">
+    <div class="sechd"><h2>Your area</h2><span>Wave 1 · 24 Aug – 19 Sep</span></div>
+    <div class="script">
+      <div class="lbl">Where you work</div>
+      <blockquote style="font-weight:500;font-size:15px;font-family:var(--body);line-height:1.65">Jogoo Road · Buruburu · Umoja 1 &amp; 2 · Kayole · Komarock · Donholm · Kariobangi South · Njiru · Chokaa · Utawala · Mihang’o</blockquote>
+      <p class="after"><b>Wave 2 begins 21 September</b> and moves your cluster outward into the peri-urban ring. Your lead will give you that map before it starts. Do not work outside this list without calling your lead first.</p>
+    </div>
+    <div class="warn">
+      <div class="t">Local knowledge for your patch</div>
+      <p>People here buy flour in 1kg and 2kg packs, often daily. When you ask about monthly volume, help them get there: how many bales in a normal week, then multiply together.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>Your day</h2><span>Six days a week · review folded into the evening</span></div>
+    <div class="day">
+      <div class="slot">
+        <div class="t">06:45</div>
+        <div class="b"><h4>Kit check</h4><p>Phone charged past 90%, power bank in the bag, paper forms as backup, ID and vest on. Do this at home, not at the first shop.</p></div>
+      </div><div class="slot">
+        <div class="t">07:15</div>
+        <div class="b"><h4>Morning brief</h4><p>Your lead posts or calls: today’s area, how you and your partner split it, and your count target. Fifteen minutes.</p></div>
+      </div><div class="slot big">
+        <div class="t">07:45</div>
+        <div class="b"><h4>Block A</h4><p>The long stretch. Work one side of the street out, the other side back. Pin every outlet while you are standing in front of it.</p><span class="q">18–22 outlets</span></div>
+      </div><div class="slot">
+        <div class="t">13:00</div>
+        <div class="b"><h4>Break &amp; midday count</h4><p>Eat, and post your running count to the cluster group. If you are behind, say so now — there is still an afternoon to fix it. Hiding it until evening helps nobody.</p></div>
+      </div><div class="slot big">
+        <div class="t">13:45</div>
+        <div class="b"><h4>Block B</h4><p>Second stretch. Keep the last hour for the shops that were closed or busy this morning.</p><span class="q">10–14 outlets</span></div>
+      </div><div class="slot">
+        <div class="t">17:15</div>
+        <div class="b"><h4>Evening review</h4><p>This replaces the old Friday review day and it is not optional. Sync everything. Fix any record your lead flagged. Log which shops need a revisit. File your report: captured, closed, refused, synced, anything unusual.</p><span class="q">45 minutes</span></div>
+      </div><div class="slot">
+        <div class="t">18:00</div>
+        <div class="b"><h4>Done</h4><p>Everything synced by 18:00. No backlog carries past 24 hours. If your phone died in the field, that is a kit problem — tell your lead, do not just skip the sync.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>Your week</h2><span>Monday to Saturday</span></div>
+    <div class="week">
+      <div class=""><div class="d">Mon</div><div class="m">Coverage</div><div class="x">Week map and targets posted by 07:15. Fresh area, full day.</div></div><div class=""><div class="d">Tue</div><div class="m">Coverage</div><div class="x">Standard route day.</div></div><div class=""><div class="d">Wed</div><div class="m">Coverage</div><div class="x">Ian’s duplicate flags land in the evening. Clear yours before you close.</div></div><div class=""><div class="d">Thu</div><div class="m">Coverage</div><div class="x">Standard route day.</div></div><div class=""><div class="d">Fri</div><div class="m">Coverage</div><div class="x">Standard route day. File your weekly notes in the evening review.</div></div><div class=""><div class="d">Sat</div><div class="m">Coverage</div><div class="x">Market-day areas and the week’s revisits — every shop that was closed or refused Mon–Fri.</div></div><div class="off"><div class="d">Sun</div><div class="m">Rest</div><div class="x">No field work, no sync, no group. Rest properly — you have five more weeks of this.</div></div>
+    </div>
+    <div class="warn">
+      <div class="t">Say something before you burn out</div>
+      <p>Six days of walking, week after week, is genuinely hard. Weeks four and five are where people start missing counts and getting sloppy without noticing. <b>If you are exhausted, tell your lead early.</b> A planned lighter Saturday costs the programme almost nothing; someone quitting in week five costs it a great deal.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>What you record at every shop</h2><span>Eight fields · all of them</span></div>
+    <div class="rec">
+      <div><h4>Location</h4><p>GPS pin captured while standing at the door</p></div><div><h4>Identity</h4><p>Shop name and type — duka, kiosk, mini-market, supermarket, wholesaler, eatery, posho mill</p></div><div><h4>Contact</h4><p>Owner or manager name and a working phone number</p></div><div><h4>Proof</h4><p>Shopfront photo with the signage legible</p></div><div><h4>Shelf</h4><p>Flour brands stocked and how many facings each — Nice, Unga, Pembe, Capwell, other</p></div><div><h4>Volume</h4><p>Monthly offtake in bales</p></div><div><h4>Supply</h4><p>Who supplies them — distributor, wholesaler, or they buy direct</p></div><div><h4>Landmark</h4><p>Nearest landmark, street or estate name, written out</p></div>
+    </div>
+    <div class="warn">
+      <div class="t">The two rules that void a record</div>
+      <p><b>No pin, no record. No photo, no record.</b> A shop without a GPS pin or a shopfront photo does not count toward your daily total — not because we are being difficult, but because a record nobody can verify is worth nothing to the client and nothing to us.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>How to open the conversation</h2><span>Interaction guidelines</span></div>
+    <div class="script">
+      <div class="lbl">Say something close to this</div>
+      <blockquote>&ldquo;Habari yako. My name is Evans, I work with Market Link. We are mapping shops in this area so suppliers can serve you better. It takes about three minutes &mdash; is now okay, or should I come back?&rdquo;</blockquote>
+      <p class="after">Greet in whatever language they greet you in. Give them a way to say no &mdash; people who feel cornered refuse, and people who are asked properly usually agree. If they say come back, write down when and actually come back.</p>
+    </div>
+    <div class="dos">
+      <div class="dobox good">
+        <h3>Do <em>ALWAYS</em></h3>
+        <ul><li>Greet first, in whatever language they greet you in. Then your name, then Market Link.</li><li>Say plainly what you are doing: mapping shops so suppliers can serve them better. Three or four minutes of their time.</li><li>Ask before you photograph. Every time.</li><li>Wait if they are serving a customer. Never interrupt a sale — it is the fastest way to be thrown out.</li><li>Say thank you and leave well, whether they helped you or not. You may need to come back.</li><li>Carry your ID and wear the vest. People relax when they can see who you are.</li></ul>
+      </div>
+      <div class="dobox bad">
+        <h3>Never <em>NO EXCEPTIONS</em></h3>
+        <ul><li>Never promise supply, stock, credit, a distributor visit, or a better price. You are not selling and you cannot commit anyone.</li><li>Never criticise Unga, Pembe, Capwell or any brand in front of an owner. You are counting, not campaigning.</li><li>Never argue about price, politics or anything else. Record what they say and move on.</li><li>Never ask for or accept money, goods or a discount from a shop. Not even a soda.</li><li>Never enter a back room, store or house. Do your work at the counter.</li><li>Never invent a record. A guessed shop is worse than a missing one, and it will be found.</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>Fallbacks</h2><span>When it does not go to plan</span></div>
+    <table class="fb">
+      <tr><th>Situation</th><th>What you do</th></tr>
+      <tr><td>Shop is closed</td><td>Log it as closed with the time. Do not skip it silently. It goes on Saturday’s revisit list.</td></tr><tr><td>Owner is away, attendant is there</td><td>Capture what the attendant can answer, mark the record attendant-sourced, and flag it for a revisit.</td></tr><tr><td>They refuse</td><td>Log the refusal and the reason if they give one. Thank them and move on. Never push, never argue.</td></tr><tr><td>Crowd forming or someone is hostile</td><td>Leave the area immediately and call your lead. Do not finish the record first. Nothing here is worth your safety.</td></tr><tr><td>Someone asks if you are government or police</td><td>Show your ID. Say you work for Market Link, a private company mapping shops for suppliers. Offer your lead’s number if they want to check.</td></tr><tr><td>Police or county askari stop you</td><td>Stay calm, do not argue, do not pay anything. Call Laban immediately.</td></tr><tr><td>Phone dies</td><td>Switch to the paper form and keep working. Enter everything the same evening, without fail.</td></tr><tr><td>No network</td><td>Keep capturing offline. Sync when you get signal or at the end of the day. Never wait until tomorrow.</td></tr><tr><td>GPS will not lock</td><td>Step into the open and give it thirty seconds. If it still fails, record the landmark and street clearly, flag the record, and tell your lead.</td></tr><tr><td>Behind target at midday</td><td>Say so at the 13:00 count. Your lead can move the split or reassign the afternoon. Discovering it at 17:00 is too late.</td></tr><tr><td>You are sick or cannot work</td><td>Tell your lead before 07:00, not at 09:00. A day covered is fine; a day nobody knew about is not.</td></tr><tr><td>Phone lost or stolen</td><td>Report it the same day to your lead and to Ian. It holds shop data and that matters more than the handset.</td></tr><tr><td>Asked to work outside your area</td><td>Do not. Call your lead first. Freelancing into another cluster creates duplicates and wrecks the count.</td></tr><tr><td>A wholesaler or big retailer wants to talk business</td><td>Take their name and number, tell them someone will call, and pass it to your lead the same day. Do not negotiate anything yourself.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><h2>Who to call, and how fast</h2><span>Escalation</span></div>
+    <table class="cad">
+      <tr><td>Now</td><td>Anything unsafe, hostile, or involving police</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead, then Laban</td></tr><tr><td>Same day</td><td>Phone, app or sync failure; lost device</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead, then Ian</td></tr><tr><td>Same day</td><td>Running more than 15% below target</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead</td></tr><tr><td>Before acting</td><td>Any request to work outside your cluster</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead</td></tr><tr><td>24 hours</td><td>A commercial lead from a wholesaler or retailer</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead, then Laban</td></tr><tr><td>Before 07:00</td><td>Illness or any day you cannot work</td><td style="text-align:right;color:var(--grey);white-space:nowrap;font-family:var(--mono);font-size:10.5px">Lead</td></tr>
+    </table>
+    <div class="warn">
+      <div class="t">The one thing worth repeating</div>
+      <p>Nothing on this sheet &mdash; no target, no count, no deadline &mdash; is worth your safety. <b>If an area feels wrong, leave it and call your lead.</b> You will not be blamed for stopping. You would be blamed for pushing on.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Market Link — a Playmax project</span>
+    <span>ML·C3 · Reports to Nicole Githui · C3</span>
+    <span>Confidential</span>
+  </div>
+</div>
+</body>
+</html>

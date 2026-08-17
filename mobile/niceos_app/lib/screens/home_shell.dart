@@ -8,6 +8,7 @@ import '../providers/submission_provider.dart';
 import '../theme/brand.dart';
 import 'census_screen.dart';
 import 'dashboard_screen.dart';
+import 'field_guide_screen.dart';
 import 'intercept_screen.dart';
 import 'profile_screen.dart';
 import 'shift_screen.dart';
@@ -81,6 +82,10 @@ class _HomeShellState extends State<HomeShell> {
         onShift: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ShiftScreen()),
+        ),
+        onFieldGuide: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FieldGuideScreen()),
         ),
         onProfile: () => Navigator.push(
           context,
@@ -244,6 +249,7 @@ class _MenuDrawer extends StatelessWidget {
   final VoidCallback onQuickIntercept;
   final VoidCallback onQuickCompetitor;
   final VoidCallback onShift;
+  final VoidCallback onFieldGuide;
   final VoidCallback onProfile;
   const _MenuDrawer({
     required this.onQuickSubmission,
@@ -251,6 +257,7 @@ class _MenuDrawer extends StatelessWidget {
     required this.onQuickIntercept,
     required this.onQuickCompetitor,
     required this.onShift,
+    required this.onFieldGuide,
     required this.onProfile,
   });
 
@@ -304,6 +311,7 @@ class _MenuDrawer extends StatelessWidget {
               child: Text('SHIFT', style: TextStyle(color: Brand.inkSoft, fontFamily: Brand.fontMono, fontSize: 11, letterSpacing: 0.14)),
             ),
             _DrawerTile(icon: Icons.access_time, label: 'Check-in / clock shift', onTap: onShift),
+            _DrawerTile(icon: Icons.menu_book_outlined, label: 'Field guide', onTap: onFieldGuide),
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 20, 20, 6),
               child: Text('ACCOUNT', style: TextStyle(color: Brand.inkSoft, fontFamily: Brand.fontMono, fontSize: 11, letterSpacing: 0.14)),

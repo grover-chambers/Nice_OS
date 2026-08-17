@@ -7,7 +7,11 @@ class AppUser {
   final String? email;
   final String? fullName;
 
-  const AppUser({required this.id, this.email, this.fullName});
+  /// Market Link cluster the account belongs to (e.g. "Eastern Corridor").
+  /// Null for accounts without a zone (super admins, the CEO).
+  final String? zone;
+
+  const AppUser({required this.id, this.email, this.fullName, this.zone});
 }
 
 class AuthProvider extends ChangeNotifier {
@@ -81,6 +85,7 @@ class AuthProvider extends ChangeNotifier {
       id: user.id,
       email: user.email,
       fullName: user.userMetadata?['full_name'] as String?,
+      zone: user.userMetadata?['zone'] as String?,
     );
   }
 }
